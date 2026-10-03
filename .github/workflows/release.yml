@@ -1,0 +1,30 @@
+# Builds the Windows installer on GitHub's servers and publishes it as a release.
+# Installed copies of the app find the new release and update themselves.
+#
+# How to use: bump "version" in package.json, then open the "Actions" tab on GitHub,
+# choose "リリース", and press "Run workflow".
+name: リリース
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build and publish the installer
+        run: npx electron-builder --win --publish always -c.publish.provider=github -c.publish.owner=${{ github.repository_owner }} -c.publish.repo=${{ github.event.repository.name }} -c.publish.releaseType=release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
