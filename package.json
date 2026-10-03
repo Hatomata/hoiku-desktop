@@ -1,0 +1,57 @@
+{
+  "name": "hoiku-kiroku",
+  "productName": "保育指導案・実習記録",
+  "version": "1.0.0",
+  "description": "保育指導案・時系列記録 作成ツール(デスクトップ版)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never",
+    "test:storage": "node test-storage.js",
+    "test:patcher": "node test-patcher.js",
+    "test": "node test-storage.js && node test-patcher.js && node test-package.js && node test-main.js"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.example.hoikukiroku",
+    "productName": "保育指導案・実習記録",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "storage.js",
+      "patcher.js",
+      "renderer/**/*",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
