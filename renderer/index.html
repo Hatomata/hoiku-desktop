@@ -1,0 +1,2853 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>保育指導案 作成ツール</title>
+<link rel="manifest" href="manifest.webmanifest">
+<!-- Screen patches (desktop app): bump ui-version whenever this page changes. min-app-version is the
+     oldest installed app that can run this page; raise it if the page needs a newer app. -->
+<meta name="ui-version" content="1.0.0">
+<meta name="min-app-version" content="1.0.0">
+<meta name="theme-color" content="#5f7d5b">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --paper:#fbfaf6;
+    --ink:#2f3b33;
+    --ink-soft:#5b6a5f;
+    --line:#d8dccd;
+    --moss:#5f7d5b;
+    --moss-deep:#425c40;
+    --coral:#e2896e;
+    --coral-soft:#f4ded4;
+    --sun:#d9a441;
+    --sky:#6f8fa3;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#eef0e6;
+    color:var(--ink);
+    font-family:"Hiragino Sans","Yu Gothic","Noto Sans JP",-apple-system,BlinkMacSystemFont,sans-serif;
+    padding:24px 16px 80px;
+    min-height:100vh;
+  }
+  .sheet{
+    max-width:1180px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:0 1px 3px rgba(50,60,45,0.08), 0 8px 24px rgba(50,60,45,0.06);
+    overflow:hidden;
+  }
+  /* Header */
+  .head{
+    padding:28px 32px 20px;
+    border-bottom:3px solid var(--moss);
+    position:relative;
+  }
+  .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    letter-spacing:.14em;
+    color:var(--moss-deep);
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .eyebrow .leaf{width:14px;height:14px;flex:none;}
+
+  .mode-indicator{
+    display:inline-flex;
+    align-items:center;
+    background:#eef0e6;
+    color:var(--moss-deep);
+    font-size:12px;
+    font-weight:700;
+    padding:6px 14px;
+    border-radius:8px;
+    margin-top:4px;
+  }
+
+  .meta-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px 16px;
+    margin-top:18px;
+  }
+  .meta-field{display:flex;flex-direction:column;gap:4px;}
+  .meta-field label{
+    font-size:11px;
+    color:var(--ink-soft);
+    font-weight:700;
+    letter-spacing:.04em;
+  }
+  .meta-field input, .meta-field textarea{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 9px;
+    font-size:13.5px;
+    font-family:inherit;
+    color:var(--ink);
+    background:#fff;
+    outline:none;
+    resize:none;
+  }
+  .meta-field input:focus, .meta-field textarea:focus{
+    border-color:var(--moss);
+    box-shadow:0 0 0 3px rgba(95,125,91,0.12);
+  }
+  .meta-field.wide{grid-column:span 4;}
+  .meta-field.half{grid-column:span 2;}
+
+  /* Toolbar */
+  .toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 32px;
+    background:#f2f4ea;
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .toolbar .left, .toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-size:13px;
+    font-weight:600;
+    padding:8px 13px;
+    border-radius:7px;
+    cursor:pointer;
+    font-family:inherit;
+    transition:background .12s, border-color .12s, transform .05s;
+  }
+  .btn:hover{background:#f6f8f0;border-color:var(--moss);}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--moss);border-color:var(--moss);color:#fff;}
+  .btn.primary:hover{background:var(--moss-deep);}
+  .btn.ghost{background:transparent;}
+  .save-status{font-size:12px;color:var(--ink-soft);min-width:120px;}
+  .debug-toggle{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:12px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    user-select:none;
+  }
+  .debug-toggle input{accent-color:var(--sun);cursor:pointer;}
+
+  .btn.small{padding:5px 10px;font-size:12px;}
+  .autosave-dot{
+    display:inline-block;
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#c9d0bc;
+    transition:background .2s;
+  }
+  .autosave-dot.flash{background:var(--moss);}
+
+  .project-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 32px;
+    background:#f2f4ea;
+    border-bottom:1px solid var(--line);
+    color:var(--moss-deep);
+  }
+  .project-bar select{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-size:13px;
+    font-weight:700;
+    font-family:inherit;
+    color:var(--ink);
+    background:#fff;
+    max-width:280px;
+  }
+  .sheet-tabs{
+    display:flex;
+    align-items:flex-end;
+    gap:2px;
+    padding:8px 32px 0;
+    background:var(--paper);
+    overflow-x:auto;
+    border-bottom:1px solid var(--line);
+  }
+  .sheet-tab{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 14px;
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:8px 8px 0 0;
+    background:#eef0e6;
+    color:var(--ink-soft);
+    font-size:12.5px;
+    font-weight:600;
+    cursor:grab;
+    white-space:nowrap;
+    flex:none;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .sheet-tab:hover{background:#e5e9db;}
+  .sheet-tab.sheet-tab-dragging{
+    opacity:.5;
+    cursor:grabbing;
+  }
+  .sheet-tab.active{
+    background:#fff;
+    color:var(--moss-deep);
+    border-color:var(--line);
+    position:relative;
+    top:1px;
+  }
+  .sheet-tab .st-mode{
+    font-size:9px;
+    font-weight:700;
+    padding:1px 5px;
+    border-radius:4px;
+    background:var(--moss);
+    color:#fff;
+    flex:none;
+  }
+  .sheet-tab.active .st-mode{background:var(--coral);}
+  .sheet-tab .st-close{
+    color:#b9bfae;
+    font-size:13px;
+    line-height:1;
+    padding:2px;
+    border-radius:4px;
+  }
+  .sheet-tab .st-close:hover{color:var(--coral);background:var(--coral-soft);}
+  .sheet-tab .st-rename{
+    color:#c3cab5;
+    font-size:12px;
+    line-height:1;
+    padding:2px;
+    border-radius:4px;
+  }
+  .sheet-tab .st-rename:hover{color:var(--moss-deep);background:#e5e9db;}
+  .sheet-tab-add{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    height:34px;
+    border:1px dashed var(--line);
+    border-bottom:none;
+    border-radius:8px 8px 0 0;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    flex:none;
+  }
+  .sheet-tab-add:hover{border-color:var(--moss);color:var(--moss-deep);background:#f6f8ee;}
+
+  /* Modals */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(47,59,51,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  .modal-box{
+    background:var(--paper);
+    border-radius:12px;
+    padding:28px 30px;
+    width:100%;
+    max-width:440px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .modal-box h3{margin:0 0 4px;font-size:16px;color:var(--ink);}
+  .modal-label{font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:8px;}
+  .modal-box input[type="text"]{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 11px;
+    font-size:14px;
+    font-family:inherit;
+    outline:none;
+  }
+  .modal-box input[type="text"]:focus{border-color:var(--moss);box-shadow:0 0 0 3px rgba(95,125,91,0.12);}
+  .modal-mode-choice{display:flex;gap:6px;}
+  .modal-mode-btn{
+    flex:1;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    font-size:13px;
+    font-weight:700;
+    font-family:inherit;
+    padding:9px;
+    border-radius:7px;
+    cursor:pointer;
+  }
+  .modal-mode-btn.active{background:var(--moss);border-color:var(--moss);color:#fff;}
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:14px;
+  }
+
+  .start-box{max-width:520px;align-items:stretch;}
+  .start-divider{
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .start-project-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    max-height:320px;
+    overflow-y:auto;
+  }
+  .start-project-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:11px 14px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .start-project-item:hover{border-color:var(--moss);background:#f6f8ee;}
+  .start-project-item .spi-name{font-weight:700;color:var(--ink);font-size:13.5px;}
+  .start-project-item .spi-meta{font-size:11.5px;color:var(--ink-soft);}
+  .start-empty{font-size:12.5px;color:var(--ink-soft);padding:6px 0;}
+
+  .start-path{font-size:11.5px;color:var(--ink-soft);margin-top:12px;word-break:break-all;}
+  .start-actions{display:flex;gap:8px;margin-top:8px;}
+  .app-version{font-weight:700;color:var(--moss-deep);margin-right:10px;white-space:nowrap;}
+  .update-banner{
+    position:fixed;
+    left:50%;
+    bottom:22px;
+    transform:translateX(-50%);
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--ink);
+    color:#fff;
+    padding:12px 16px;
+    border-radius:10px;
+    box-shadow:0 8px 30px rgba(0,0,0,.3);
+    font-size:13px;
+    z-index:300;
+  }
+  .update-banner button{
+    border:none;
+    border-radius:6px;
+    padding:7px 12px;
+    font-size:12.5px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .update-banner .ub-primary{background:var(--sun);color:#2f3b33;}
+  .update-banner .ub-ghost{background:transparent;color:#cfd6c8;}
+  .app-toast{
+    position:fixed;
+    left:50%;
+    bottom:22px;
+    transform:translateX(-50%);
+    background:var(--moss-deep);
+    color:#fff;
+    padding:10px 16px;
+    border-radius:8px;
+    font-size:13px;
+    box-shadow:0 8px 30px rgba(0,0,0,.25);
+    z-index:300;
+  }
+
+  .empty-project-hint{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+    padding:60px 20px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+  .empty-project-hint svg{color:#c3cab5;}
+  .empty-project-hint p{margin:0;font-size:13.5px;line-height:1.7;}
+
+  /* Table */
+  .table-wrap{overflow-x:auto;padding:20px 32px 32px;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+    min-width:920px;
+  }
+  col.col-del{width:34px;}
+  col.col-drag{width:30px;}
+
+  thead th{
+    text-align:left;
+    font-size:12.5px;
+    font-weight:700;
+    color:#fff;
+    background:var(--moss);
+    padding:10px 12px;
+    position:sticky;
+    top:0;
+  }
+  thead th:first-child{border-top-left-radius:6px;}
+  thead th .th-inner{display:flex;align-items:center;gap:6px;}
+  thead th svg{width:15px;height:15px;flex:none;opacity:.95;}
+  thead th.col-del-h{background:var(--moss);}
+  thead th.col-drag-h{background:var(--moss);}
+
+  .drag-cell{
+    text-align:center;
+    vertical-align:middle;
+    background:#fff !important;
+    padding:0;
+    touch-action:none;
+  }
+  .drag-handle{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    height:100%;
+    min-height:44px;
+    cursor:grab;
+    color:#c3cab5;
+    background:transparent;
+    border:none;
+    touch-action:none;
+  }
+  .drag-handle:hover{color:var(--moss);background:#f2f4ea;}
+  .drag-handle:active{cursor:grabbing;}
+  tr.row-dragging{
+    opacity:.4;
+  }
+  tr.row-drop-target td{
+    box-shadow:inset 0 2px 0 0 var(--moss);
+  }
+  tr.row-drop-target-below td{
+    box-shadow:inset 0 -2px 0 0 var(--moss);
+  }
+
+  .col-resizer{
+    position:absolute;
+    top:0;
+    right:-4px;
+    width:8px;
+    height:100%;
+    cursor:col-resize;
+    touch-action:none;
+    z-index:5;
+  }
+  .col-resizer::after{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:3px;
+    width:2px;
+    background:rgba(255,255,255,0.35);
+  }
+  .col-resizer:hover::after, .col-resizer.active::after{
+    background:var(--sun);
+  }
+
+  tbody td{
+    border:1px solid var(--line);
+    padding:0;
+    vertical-align:top;
+    background:#fff;
+  }
+  tbody tr:nth-child(even) td{background:#fafbf7;}
+  .cell{
+    min-height:64px;
+    padding:9px 11px;
+    font-size:13.5px;
+    line-height:1.55;
+    outline:none;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .cell:empty:before{
+    content:attr(data-placeholder);
+    color:#b7bfab;
+  }
+  .cell:focus{
+    background:#f6f8ee;
+    box-shadow:inset 0 0 0 2px rgba(95,125,91,0.35);
+  }
+  .cell.time-cell{
+    font-weight:700;
+    color:var(--moss-deep);
+    text-align:center;
+    font-size:13.5px;
+  }
+  .diagram-toggle{
+    display:flex;
+    align-items:flex-start;
+    gap:5px;
+    padding:0 11px 8px;
+    font-size:11px;
+    color:var(--ink-soft);
+    line-height:1.35;
+    cursor:pointer;
+    user-select:none;
+  }
+  .diagram-toggle input{
+    margin-top:1.5px;
+    flex:none;
+    accent-color:var(--moss);
+    cursor:pointer;
+  }
+  td.del-cell{
+    text-align:center;
+    vertical-align:middle;
+    background:#fff !important;
+  }
+  .row-del{
+    border:none;
+    background:transparent;
+    color:#b9bfae;
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+    padding:6px;
+    border-radius:5px;
+  }
+  .row-del:hover{color:var(--coral);background:var(--coral-soft);}
+
+  .add-row-bar{
+    display:flex;
+    justify-content:center;
+    padding:14px 0 2px;
+  }
+  .add-row-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    border:1.5px dashed var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    font-size:13px;
+    font-weight:600;
+    padding:8px 20px;
+    border-radius:8px;
+    cursor:pointer;
+    font-family:inherit;
+    width:100%;
+    justify-content:center;
+  }
+  .add-row-btn:hover{border-color:var(--moss);color:var(--moss-deep);background:#f6f8ee;}
+
+  .footer-note{
+    padding:0 32px 26px;
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  /* Print */
+  @media print{
+    body{background:#fff;padding:0;}
+    .sheet{box-shadow:none;border:none;border-radius:0;max-width:none;}
+    .toolbar, .add-row-bar, .row-del, .footer-note, .save-status{display:none !important;}
+    td.del-cell{display:none;}
+    col.col-del{width:0;}
+    .head{border-bottom:2px solid #000;}
+    thead th{background:#e9ede2 !important;color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .cell{font-size:12px;}
+  }
+
+  @media (max-width:760px){
+    .meta-grid{grid-template-columns:repeat(2,1fr);}
+    .meta-field.wide{grid-column:span 2;}
+    .meta-field.half{grid-column:span 2;}
+    .head, .toolbar, .table-wrap, .footer-note{padding-left:16px;padding-right:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="startScreen" style="display:none">
+  <div class="modal-box start-box">
+    <div class="eyebrow" style="margin-bottom:18px">
+      <svg class="leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c-4-3-7-7-7-11a7 7 0 0 1 14 0c0 4-3 8-7 11z"/><path d="M12 12v9"/></svg>
+      保育指導案・実習記録 作成ツール
+    </div>
+    <button class="btn primary" id="startNewProjectBtn" style="align-self:flex-start">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+      新しいプロジェクトを作成
+    </button>
+    <div class="start-divider">既存のプロジェクトを開く</div>
+    <div class="start-project-list" id="startProjectList"></div>
+    <div class="start-path app-only" id="startDataDir" style="display:none"></div>
+    <div class="start-actions app-only" style="display:none">
+      <button class="btn ghost small" id="startOpenDirBtn">保存フォルダを開く</button>
+      <button class="btn ghost small" id="startChooseDirBtn">保存フォルダを変更</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="newSheetModal" style="display:none">
+  <div class="modal-box">
+    <h3>新しいシートを作成</h3>
+    <label class="modal-label">シート名</label>
+    <input type="text" id="newSheetNameInput" placeholder="例:第1日目、指導案 おにごっこ">
+    <label class="modal-label">モード</label>
+    <div class="modal-mode-choice" id="newSheetModeChoice">
+      <button type="button" class="modal-mode-btn active" data-mode="shidouan">指導案</button>
+      <button type="button" class="modal-mode-btn" data-mode="jikeiretsu">時系列記録</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="newSheetCancelBtn">キャンセル</button>
+      <button class="btn primary" id="newSheetCreateBtn">作成</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet">
+  <div class="head">
+    <div class="eyebrow">
+      <svg class="leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c-4-3-7-7-7-11a7 7 0 0 1 14 0c0 4-3 8-7 11z"/><path d="M12 12v9"/></svg>
+      保育指導案・実習記録 作成ツール
+    </div>
+
+    <div class="mode-indicator" id="modeIndicator">指導案モード</div>
+
+    <div class="meta-grid">
+      <div class="meta-field field-shidouan">
+        <label>年月日</label>
+        <input type="text" id="metaDate" placeholder="例:令和7年6月10日(火)">
+      </div>
+      <div class="meta-field field-jikeiretsu" style="display:none">
+        <label>第X日目</label>
+        <input type="text" id="metaDayNum" placeholder="例:3">
+      </div>
+      <div class="meta-field field-jikeiretsu" style="display:none">
+        <label>月日</label>
+        <input type="text" id="metaMonthDay" placeholder="例:6月4日">
+      </div>
+      <div class="meta-field field-jikeiretsu" style="display:none">
+        <label>曜日</label>
+        <input type="text" id="metaWeekday" placeholder="例:木曜日">
+      </div>
+      <div class="meta-field field-jikeiretsu" style="display:none">
+        <label>天候</label>
+        <input type="text" id="metaWeather" placeholder="例:雨">
+      </div>
+      <div class="meta-field">
+        <label>対象年齢</label>
+        <input type="text" id="metaAge" placeholder="例:5">
+      </div>
+      <div class="meta-field">
+        <label>クラス名</label>
+        <input type="text" id="metaClassName" placeholder="例:ひまわり">
+      </div>
+      <div class="meta-field">
+        <label>実習生氏名</label>
+        <input type="text" id="metaStudent" placeholder="例:山田 花子">
+      </div>
+      <div class="meta-field">
+        <label>指導者氏名</label>
+        <input type="text" id="metaTeacher" placeholder="例:佐藤 太郎">
+      </div>
+      <div class="meta-field">
+        <label>男児人数</label>
+        <input type="text" id="metaBoys" placeholder="例:10">
+      </div>
+      <div class="meta-field">
+        <label>女児人数</label>
+        <input type="text" id="metaGirls" placeholder="例:8">
+      </div>
+      <div class="meta-field field-jikeiretsu" style="display:none">
+        <label>欠席人数</label>
+        <input type="text" id="metaAbsent" placeholder="例:6">
+      </div>
+      <div class="meta-field wide field-shidouan">
+        <label>主活動</label>
+        <input type="text" id="planTitle" placeholder="例:色水あそび">
+      </div>
+      <div class="meta-field wide field-jikeiretsu" style="display:none">
+        <label>主な活動</label>
+        <input type="text" id="metaMainActivity" placeholder="例:室内遊び、お店屋さんごっこ">
+      </div>
+      <div class="meta-field wide field-shidouan">
+        <label>ねらい</label>
+        <textarea id="metaGoal" rows="2" placeholder="例:友だちと一緒に色の変化を楽しみ、発見や気づきを言葉で伝え合う。"></textarea>
+      </div>
+      <div class="meta-field wide field-shidouan">
+        <label>内容</label>
+        <textarea id="metaContent" rows="2" placeholder="例:色水を作って遊ぶ。友だちと見せ合い、感じたことを伝え合う。"></textarea>
+      </div>
+      <div class="meta-field wide field-jikeiretsu" style="display:none">
+        <label>ねらい・内容</label>
+        <textarea id="metaGoalContent" rows="2" placeholder="例:遊びに必要なものを作り、友だちと言葉のやり取りを楽しむ。"></textarea>
+      </div>
+      <div class="meta-field wide field-jikeiretsu" style="display:none">
+        <label>実習のねらい</label>
+        <textarea id="metaTraineeGoal" rows="2" placeholder="例:その子どもがどんな子どもなのか考え、その子どもに合った声かけをする。"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="left">
+      <button class="btn primary" id="jsonExportProjectBtn" title="プロジェクト内の全シートをまとめてJSONファイルとして保存します(2回目以降は同じファイルに上書き)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span id="saveProjectLabel">プロジェクトを保存</span>
+      </button>
+      <button class="btn ghost app-only" id="openDataDirBtn" style="display:none" title="プロジェクトのファイルとバックアップが入っているフォルダを開きます">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        保存フォルダを開く
+      </button>
+      <button class="btn" id="excelBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9.5 13l5 6M14.5 13l-5 6"/></svg>
+        Excel出力
+      </button>
+      <button class="btn ghost" id="jsonExportBtn" title="現在のシート1枚分だけをJSONファイルとして保存します(2回目以降は同じファイルに上書き)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        このシートを書き出し
+      </button>
+      <button class="btn ghost" id="jsonImportBtn" title="「プロジェクトを保存」または「このシートを書き出し」で作ったファイルを読み込みます">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        データ読み込み
+      </button>
+      <input type="file" id="jsonImportInput" accept="application/json" style="display:none">
+      <label class="debug-toggle"><input type="checkbox" id="debugFillCheck">空欄に見本文を出力(デバッグ用)</label>
+    </div>
+    <div class="right">
+      <span class="autosave-dot" id="autosaveDot" title="ブラウザへの自動バックアップ(補助・メインはプロジェクトを保存)"></span>
+      <span class="save-status" id="saveStatus"></span>
+    </div>
+  </div>
+
+  <div class="project-bar" id="projectBar" style="display:none">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+    <select id="projectSelect"></select>
+    <button class="btn ghost small" id="projectNewBtn" title="新しいプロジェクト">+ 新規プロジェクト</button>
+    <button class="btn ghost small" id="projectRenameBtn" title="プロジェクト名を変更">名前変更</button>
+    <button class="btn ghost small" id="projectDeleteBtn" title="このプロジェクトを削除">削除</button>
+    <button class="btn ghost small app-only" id="openBackupsBtn" style="display:none" title="このプロジェクトの自動バックアップが入っているフォルダを開きます">バックアップを見る</button>
+  </div>
+  <div class="sheet-tabs" id="sheetTabs"></div>
+
+  <div class="empty-project-hint" id="emptyProjectHint" style="display:none">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+    <p>このプロジェクトにはまだシートがありません。<br>タブの「+」から最初のシートを作成してください。</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <colgroup id="tableColgroup"></colgroup>
+      <thead id="tableHead"></thead>
+      <tbody id="planBody"></tbody>
+    </table>
+    <div class="add-row-bar">
+      <button class="add-row-btn" id="addRowBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+        行を追加
+      </button>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span class="app-version" id="appVersionLabel"></span>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <span id="footerText">各セルをクリックして直接入力できます。列の境界をドラッグ、またはダブルクリックで幅をpx指定できます。「プロジェクトを保存」がメインの保存方法です(JSONファイルとして保存され、対応ブラウザでは2回目以降は同じファイルに上書きされます)。ブラウザ内への自動保存(右上の点)はあくまで補助のバックアップで、閲覧履歴の削除などで消える可能性があるため過信しないでください。保存したJSONファイルは「データ読み込み」で復元できます。環境構成の欄にある「環境図を描くスペースを空ける」にチェックすると、Excel出力時にそのセルの下に11行分の空白(手描き用)が入ります。</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Desktop app: use the ExcelJS copy installed with the app, so Excel export works offline.
+  // Browser: load it from the CDN (falls back to the CDN if the local copy is missing).
+  var cdn = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+  var s = document.createElement('script');
+  if(window.desktopAPI){
+    s.src = window.desktopAPI.exceljsUrl || '../node_modules/exceljs/dist/exceljs.min.js';
+    s.onerror = function(){ var f = document.createElement('script'); f.src = cdn; document.head.appendChild(f); };
+  } else {
+    s.src = cdn;
+  }
+  document.head.appendChild(s);
+})();
+</script>
+<script>
+(function(){
+  const STORAGE_KEY = 'plan-v2';
+  const body = document.getElementById('planBody');
+  const saveStatus = document.getElementById('saveStatus');
+
+  const ICONS = {
+    clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>',
+    grid: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+    box: '<path d="M21 8V21H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>',
+    child: '<circle cx="12" cy="7" r="3.2"/><path d="M5 21c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/>',
+    heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+    pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
+  };
+
+  // Column schemas for each mode. Exactly one column per schema should have diagram:true —
+  // that's the column that gets the "環境図を描くスペースを空ける" checkbox.
+  const COLUMN_SCHEMAS = {
+    shidouan: [
+      { key:'time', label:'時間', icon:'clock', widthPct:9, diagram:false, placeholder:'例:9:00' },
+      { key:'env', label:'環境構成(場所・場面)', icon:'grid', widthPct:22, diagram:true, placeholder:'例:＜保育室＞室内遊び' },
+      { key:'prep', label:'準備物', icon:'box', widthPct:16, diagram:false, placeholder:'例:ペットボトル、絵の具、コップ' },
+      { key:'child', label:'子どもの活動', icon:'child', widthPct:23, diagram:false, placeholder:'例:色水を作って友だちと見せ合う' },
+      { key:'support', label:'保育者の援助・配慮', icon:'heart', widthPct:26, diagram:false, placeholder:'例:色の変化に気づけるよう声をかける' }
+    ],
+    jikeiretsu: [
+      { key:'time', label:'時間', icon:'clock', widthPct:8, diagram:false, placeholder:'例:9:30' },
+      { key:'child', label:'子どもの活動', icon:'child', widthPct:23, diagram:false, placeholder:'例:朝の挨拶をする。トイレに行く。' },
+      { key:'env', label:'環境構成・準備', icon:'grid', widthPct:23, diagram:true, placeholder:'例:＜保育室＞朝の会' },
+      { key:'support', label:'保育者の援助・かかわり', icon:'heart', widthPct:23, diagram:false, placeholder:'例:一日の流れを、順序立てて視覚的に伝える。' },
+      { key:'trainee', label:'実習生の活動・気づき', icon:'pencil', widthPct:23, diagram:false, placeholder:'例:子どもに声をかけながら片付けを促す。' }
+    ]
+  };
+
+  let currentMode = 'shidouan';
+
+  function renderColgroup(){
+    const colgroup = document.getElementById('tableColgroup');
+    const schema = COLUMN_SCHEMAS[currentMode];
+    let html = '<col class="col-drag">';
+    schema.forEach(col=>{ html += `<col data-field="${col.key}" style="width:${col.widthPct}%">`; });
+    html += '<col class="col-del">';
+    colgroup.innerHTML = html;
+  }
+
+  function renderThead(){
+    const thead = document.getElementById('tableHead');
+    const schema = COLUMN_SCHEMAS[currentMode];
+    let html = '<tr><th class="col-drag-h"></th>';
+    schema.forEach(col=>{
+      html += `<th><div class="th-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">${ICONS[col.icon]}</svg>${col.label}</div></th>`;
+    });
+    html += '<th class="col-del-h"></th></tr>';
+    thead.innerHTML = html;
+  }
+
+  // Sets which schema (指導案/時系列記録) the form currently reflects. This is now
+  // always driven by the active sheet's fixed mode — there's no user-facing toggle,
+  // since a sheet's mode is chosen once at creation and never changes afterward.
+  function setMode(mode){
+    currentMode = mode;
+    const indicator = document.getElementById('modeIndicator');
+    if(indicator) indicator.textContent = mode === 'jikeiretsu' ? '時系列記録モード' : '指導案モード';
+    document.querySelectorAll('.field-shidouan').forEach(el=>{ el.style.display = mode === 'shidouan' ? '' : 'none'; });
+    document.querySelectorAll('.field-jikeiretsu').forEach(el=>{ el.style.display = mode === 'jikeiretsu' ? '' : 'none'; });
+    renderColgroup();
+    renderThead();
+    initColResize();
+  }
+
+  function makeRow(data){
+    data = data || {};
+    const schema = COLUMN_SCHEMAS[currentMode];
+    const tr = document.createElement('tr');
+    let html = `<td class="drag-cell"><button class="drag-handle" title="ドラッグして並び替え" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+    </button></td>`;
+    schema.forEach(col=>{
+      const cellClass = col.key === 'time' ? 'cell time-cell' : 'cell';
+      if(col.diagram){
+        html += `<td>
+          <div class="${cellClass}" contenteditable="true" data-field="${col.key}" data-placeholder="${col.placeholder}"></div>
+          <label class="diagram-toggle"><input type="checkbox" class="diagram-check">環境図を描くスペースを空ける(11行分)</label>
+        </td>`;
+      } else {
+        html += `<td><div class="${cellClass}" contenteditable="true" data-field="${col.key}" data-placeholder="${col.placeholder}"></div></td>`;
+      }
+    });
+    html += `<td class="del-cell"><button class="row-del" title="この行を削除">✕</button></td>`;
+    tr.innerHTML = html;
+    tr.querySelectorAll('.cell').forEach(cell=>{
+      cell.innerText = data[cell.dataset.field] || '';
+    });
+    const diagCheck = tr.querySelector('.diagram-check');
+    if(diagCheck){
+      diagCheck.checked = !!data.diagram;
+      diagCheck.addEventListener('change', markUnsaved);
+    }
+    attachDragHandle(tr);
+    tr.querySelector('.row-del').addEventListener('click', ()=>{
+      if(body.children.length <= 1){
+        tr.querySelectorAll('.cell').forEach(c=>c.innerText='');
+        if(diagCheck) diagCheck.checked = false;
+        markUnsaved();
+        return;
+      }
+      tr.remove();
+      markUnsaved();
+    });
+    return tr;
+  }
+
+  // Drag-and-drop row reordering (pointer events, so it works with mouse and touch alike)
+  function attachDragHandle(tr){
+    const handle = tr.querySelector('.drag-handle');
+    let dragging = false;
+
+    handle.addEventListener('pointerdown', (e)=>{
+      dragging = true;
+      tr.classList.add('row-dragging');
+      handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    handle.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      const y = e.clientY;
+      const rows = [...body.querySelectorAll('tr')].filter(r => r !== tr);
+      for(const r of rows){
+        const rect = r.getBoundingClientRect();
+        if(y >= rect.top && y <= rect.bottom){
+          const insertAfter = y > rect.top + rect.height / 2;
+          if(insertAfter){
+            if(r.nextSibling !== tr) body.insertBefore(tr, r.nextSibling);
+          } else if(r !== tr.nextSibling){
+            body.insertBefore(tr, r);
+          }
+          break;
+        }
+      }
+    });
+
+    function endDrag(){
+      if(!dragging) return;
+      dragging = false;
+      tr.classList.remove('row-dragging');
+      markUnsaved();
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+  }
+
+  function addRow(data){
+    body.appendChild(makeRow(data));
+  }
+
+  function collectData(){
+    const rows = [...body.querySelectorAll('tr')].map(tr=>{
+      const obj = {};
+      tr.querySelectorAll('.cell').forEach(c=>{ obj[c.dataset.field] = c.innerText; });
+      const diag = tr.querySelector('.diagram-check');
+      obj.diagram = diag ? diag.checked : false;
+      return obj;
+    });
+    const colWidths = {};
+    document.querySelectorAll('colgroup col[data-field]').forEach(c=>{
+      if(c.style.width) colWidths[c.dataset.field] = c.style.width;
+    });
+    return {
+      mode: currentMode,
+      title: document.getElementById('planTitle').value,
+      date: document.getElementById('metaDate').value,
+      dayNum: document.getElementById('metaDayNum').value,
+      monthDay: document.getElementById('metaMonthDay').value,
+      weekday: document.getElementById('metaWeekday').value,
+      weather: document.getElementById('metaWeather').value,
+      age: document.getElementById('metaAge').value,
+      className: document.getElementById('metaClassName').value,
+      student: document.getElementById('metaStudent').value,
+      teacher: document.getElementById('metaTeacher').value,
+      boys: document.getElementById('metaBoys').value,
+      girls: document.getElementById('metaGirls').value,
+      absent: document.getElementById('metaAbsent').value,
+      mainActivity: document.getElementById('metaMainActivity').value,
+      goal: document.getElementById('metaGoal').value,
+      content: document.getElementById('metaContent').value,
+      goalContent: document.getElementById('metaGoalContent').value,
+      traineeGoal: document.getElementById('metaTraineeGoal').value,
+      rows,
+      colWidths
+    };
+  }
+
+  function applyData(d){
+    if(d.mode && d.mode !== currentMode){
+      setMode(d.mode);
+    }
+    document.getElementById('planTitle').value = d.title || '';
+    document.getElementById('metaDate').value = d.date || '';
+    document.getElementById('metaDayNum').value = d.dayNum || '';
+    document.getElementById('metaMonthDay').value = d.monthDay || '';
+    document.getElementById('metaWeekday').value = d.weekday || '';
+    document.getElementById('metaWeather').value = d.weather || '';
+    document.getElementById('metaAge').value = d.age || '';
+    document.getElementById('metaClassName').value = d.className || '';
+    document.getElementById('metaStudent').value = d.student || '';
+    document.getElementById('metaTeacher').value = d.teacher || '';
+    document.getElementById('metaBoys').value = d.boys || '';
+    document.getElementById('metaGirls').value = d.girls || '';
+    document.getElementById('metaAbsent').value = d.absent || '';
+    document.getElementById('metaMainActivity').value = d.mainActivity || '';
+    document.getElementById('metaGoal').value = d.goal || '';
+    document.getElementById('metaContent').value = d.content || '';
+    document.getElementById('metaGoalContent').value = d.goalContent || '';
+    document.getElementById('metaTraineeGoal').value = d.traineeGoal || '';
+    body.innerHTML = '';
+    if(d.rows && d.rows.length){
+      d.rows.forEach(r=>addRow(r));
+    } else {
+      defaultRows();
+    }
+    if(d.colWidths){
+      document.querySelectorAll('colgroup col[data-field]').forEach(c=>{
+        const w = d.colWidths[c.dataset.field];
+        if(w) c.style.width = w;
+      });
+    }
+  }
+
+  // ---- Column resizing ----
+  function initColResize(){
+    const table = document.querySelector('table');
+    const ths = [...table.querySelectorAll('thead th')];
+    const cols = [...table.querySelectorAll('colgroup col')];
+    const resizableCount = ths.length - 1; // exclude delete column
+
+    ths.forEach((th, i)=>{
+      if(i === 0 || i >= resizableCount) return; // skip drag-handle column and delete column
+      if(!cols[i].style.width || cols[i].style.width.endsWith('%')){
+        // Only measure while the table is actually on screen. A hidden table (e.g. a project
+        // with no sheets yet) measures 0px, which used to collapse every column to zero width.
+        const measured = th.getBoundingClientRect().width;
+        if(measured > 0) cols[i].style.width = measured + 'px';
+      }
+      if(th.querySelector('.col-resizer')) return; // already has a handle
+      th.style.position = 'relative';
+      const handle = document.createElement('div');
+      handle.className = 'col-resizer';
+      th.appendChild(handle);
+
+      let startX = 0, startWidth = 0;
+
+      handle.addEventListener('pointerdown', (e)=>{
+        startX = e.clientX;
+        startWidth = cols[i].getBoundingClientRect().width;
+        handle.classList.add('active');
+        handle.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+      handle.addEventListener('pointermove', (e)=>{
+        if(!handle.hasPointerCapture || !handle.hasPointerCapture(e.pointerId)) return;
+        const newWidth = Math.max(60, Math.round(startWidth + (e.clientX - startX)));
+        cols[i].style.width = newWidth + 'px';
+      });
+      handle.addEventListener('pointerup', (e)=>{
+        handle.classList.remove('active');
+        markUnsaved();
+      });
+      handle.addEventListener('dblclick', (e)=>{
+        const current = Math.round(cols[i].getBoundingClientRect().width);
+        const input = prompt('この列の幅をpxで入力してください', current);
+        if(input === null) return;
+        const val = parseInt(input, 10);
+        if(!isNaN(val) && val >= 60){
+          cols[i].style.width = val + 'px';
+          markUnsaved();
+        }
+      });
+    });
+  }
+
+  function defaultRows(){
+    body.innerHTML = '';
+    addRow({});
+    addRow({});
+    addRow({});
+  }
+
+  let saveTimer = null;
+  function markUnsaved(){
+    saveStatus.textContent = '未保存の変更があります';
+    saveStatus.style.color = '#c07a3e';
+  }
+
+  function newId(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // Set only inside the desktop app (Electron): projects are real files on disk.
+  const APP = window.desktopAPI || null;
+
+  // ---- Storage backend detection ----
+  // window.storage is a special API only available inside Claude.ai's artifact
+  // viewer. When this file is opened directly in a regular browser (e.g. double-
+  // clicked or opened via Chrome from disk), that API doesn't exist — so we fall
+  // back to the browser's own localStorage, which works fine outside Claude.ai.
+  let storageBackend = null;
+  try{
+    if(typeof window.storage !== 'undefined'){
+      storageBackend = window.storage;
+    } else if(typeof localStorage !== 'undefined'){
+      storageBackend = {
+        async get(key){
+          const v = localStorage.getItem(key);
+          if(v === null) throw new Error('not found');
+          return { key, value: v };
+        },
+        async set(key, value){
+          localStorage.setItem(key, value);
+          return { key, value };
+        },
+        async delete(key){
+          localStorage.removeItem(key);
+          return { key, deleted:true };
+        }
+      };
+    }
+  }catch(e){ storageBackend = null; }
+
+  // Whether persistent storage is available in this environment.
+  const DESKTOP = APP !== null || storageBackend !== null;
+
+  // ---- Storage adapter (built on storageBackend: get/set/delete) ----
+  // Each project is one key ("project:<id>") holding the whole project object,
+  // including all of its sheets. A lightweight "project-index" key holds just
+  // {id,name,sheetCount,updatedAt} for every project, so the start screen can list
+  // them without fetching every project's full contents.
+  const WebStorage = {
+    async _readIndex(){
+      try{
+        const res = await storageBackend.get('project-index', false);
+        return res && res.value ? JSON.parse(res.value) : [];
+      }catch(e){ return []; }
+    },
+    async _writeIndex(idx){
+      await storageBackend.set('project-index', JSON.stringify(idx), false);
+    },
+    async listProjects(){
+      const idx = await this._readIndex();
+      idx.sort((a, b)=> (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+      return idx;
+    },
+    async createProject(name){
+      const id = newId();
+      const project = { id, name: name || '新しいプロジェクト', sheets: [], activeSheetId: null };
+      await storageBackend.set('project:' + id, JSON.stringify(project), false);
+      const idx = await this._readIndex();
+      idx.push({ id, name: project.name, sheetCount: 0, updatedAt: new Date().toISOString() });
+      await this._writeIndex(idx);
+      return project;
+    },
+    async loadProject(id){
+      try{
+        const res = await storageBackend.get('project:' + id, false);
+        return res && res.value ? JSON.parse(res.value) : null;
+      }catch(e){ return null; }
+    },
+    async saveProject(id, project){
+      await storageBackend.set('project:' + id, JSON.stringify(project), false);
+      const idx = await this._readIndex();
+      const meta = { id, name: project.name, sheetCount: project.sheets.length, updatedAt: new Date().toISOString() };
+      const entry = idx.find(p => p.id === id);
+      if(entry) Object.assign(entry, meta); else idx.push(meta);
+      await this._writeIndex(idx);
+      return { ok:true, id };
+    },
+    async deleteProject(id){
+      try{ await storageBackend.delete('project:' + id, false); }catch(e){ /* already gone */ }
+      const idx = await this._readIndex();
+      await this._writeIndex(idx.filter(p => p.id !== id));
+      return { ok:true };
+    },
+    async renameProject(id, newName){
+      const project = await this.loadProject(id);
+      if(!project) return { ok:false };
+      project.name = newName;
+      return this.saveProject(id, project);
+    }
+  };
+
+  // Desktop app: every call goes to the main process, which reads/writes the project
+  // files (and their automatic backups) in the data folder.
+  const AppStorage = APP ? {
+    listProjects: () => APP.listProjects(),
+    createProject: (name) => APP.createProject(name),
+    loadProject: (id) => APP.loadProject(id),
+    saveProject: (id, project, opts) => APP.saveProject(id, project, opts),
+    deleteProject: (id) => APP.deleteProject(id),
+    async renameProject(id, newName){
+      const project = await APP.loadProject(id);
+      if(!project) return { ok:false };
+      project.name = newName;
+      return APP.saveProject(id, project);
+    }
+  } : null;
+  const Storage = APP ? AppStorage : WebStorage;
+
+  // ---- Project / Sheet state ----
+  // A "project" (親ファイル, e.g. 「教育実習1」) holds an ordered list of "sheets"
+  // (子シート, e.g. 「第1日目」「指導案 おにごっこ」), each with its own mode + form data.
+  let currentProject = null;   // { id, name, sheets: [{id,name,mode,data,updatedAt}], activeSheetId }
+  let currentSheetId = null;
+
+  function activeSheet(){
+    if(!currentProject) return null;
+    return currentProject.sheets.find(s => s.id === currentSheetId) || null;
+  }
+
+  // Pulls the current form into the active sheet's data, and persists the whole
+  // project to disk. Called on explicit save, on auto-save, and before switching
+  // away from a sheet/project so nothing gets lost.
+  async function persistCurrentSheet(){
+    if(!DESKTOP || !currentProject) return;
+    const sheet = activeSheet();
+    if(!sheet) return;
+    sheet.data = collectData();
+    sheet.mode = currentMode;
+    sheet.updatedAt = new Date().toISOString();
+    currentProject.activeSheetId = currentSheetId;
+    await Storage.saveProject(currentProject.id, currentProject);
+  }
+
+  // Silent auto-save: runs periodically and after edits.
+  let autosaveTimer = null;
+  async function autosaveNow(){
+    if(!DESKTOP || !currentProject) return;
+    try{
+      await persistCurrentSheet();
+      if(APP){
+        saveStatus.textContent = '自動保存しました (' + new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}) + ')';
+        saveStatus.style.color = '#5f7d5b';
+      }
+      const dot = document.getElementById('autosaveDot');
+      if(dot){
+        dot.classList.add('flash');
+        setTimeout(()=> dot.classList.remove('flash'), 600);
+      }
+    }catch(e){
+      console.error('autosave failed:', e);
+    }
+  }
+  function scheduleAutosave(){
+    if(!DESKTOP) return;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(autosaveNow, 3000); // 3s after the last edit
+  }
+
+  // ---- Rendering the project selector + sheet tabs ----
+  async function renderProjectSelect(){
+    const select = document.getElementById('projectSelect');
+    const list = await Storage.listProjects();
+    select.innerHTML = '';
+    list.forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = `${p.name}（${p.sheetCount}）`;
+      if(currentProject && p.id === currentProject.id) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  function renderSheetTabs(){
+    const wrap = document.getElementById('sheetTabs');
+    wrap.innerHTML = '';
+    if(!currentProject) return;
+    currentProject.sheets.forEach(sheet=>{
+      const tab = document.createElement('div');
+      tab.className = 'sheet-tab' + (sheet.id === currentSheetId ? ' active' : '');
+      tab.dataset.sheetId = sheet.id;
+      tab.innerHTML = `
+        <span class="st-mode">${sheet.mode === 'jikeiretsu' ? '記録' : '指導案'}</span>
+        <span class="st-name">${sheet.name}</span>
+        <span class="st-rename" title="シート名を変更">✎</span>
+        <span class="st-close" title="このシートを削除">✕</span>
+      `;
+      tab.querySelector('.st-name').addEventListener('click', ()=>{
+        if(tab.dataset.justDragged){ delete tab.dataset.justDragged; return; }
+        switchToSheet(sheet.id);
+      });
+      tab.querySelector('.st-name').addEventListener('dblclick', (e)=>{ e.stopPropagation(); renameSheet(sheet); });
+      tab.querySelector('.st-mode').addEventListener('click', ()=>{
+        if(tab.dataset.justDragged){ delete tab.dataset.justDragged; return; }
+        switchToSheet(sheet.id);
+      });
+      tab.querySelector('.st-rename').addEventListener('click', (e)=>{ e.stopPropagation(); renameSheet(sheet); });
+      tab.querySelector('.st-close').addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        if(currentProject.sheets.length <= 1){
+          alert('プロジェクト内に最低1つはシートが必要です。');
+          return;
+        }
+        if(confirm(`シート「${sheet.name}」を削除しますか?`)){
+          currentProject.sheets = currentProject.sheets.filter(s => s.id !== sheet.id);
+          if(currentSheetId === sheet.id){
+            currentSheetId = currentProject.sheets[0].id;
+          }
+          await Storage.saveProject(currentProject.id, currentProject);
+          renderSheetTabs();
+          await switchToSheet(currentSheetId, true);
+        }
+      });
+      attachTabDrag(tab);
+      wrap.appendChild(tab);
+    });
+
+    const addTab = document.createElement('button');
+    addTab.className = 'sheet-tab-add';
+    addTab.title = '新しいシートを追加';
+    addTab.textContent = '+';
+    addTab.addEventListener('click', openNewSheetModal);
+    wrap.appendChild(addTab);
+  }
+
+  // Drag-and-drop reordering of sheet tabs (pointer events, so mouse and touch both
+  // work). A small movement threshold keeps ordinary clicks (to switch/rename/close
+  // a tab) from being mistaken for a drag.
+  function attachTabDrag(tab){
+    const DRAG_THRESHOLD = 6;
+    let pointerId = null;
+    let startX = 0, startY = 0;
+    let dragging = false;
+    let captured = false;
+
+    tab.addEventListener('pointerdown', (e)=>{
+      if(e.target.closest('.st-close') || e.target.closest('.st-rename')) return;
+      pointerId = e.pointerId;
+      startX = e.clientX;
+      startY = e.clientY;
+      dragging = false;
+      captured = false;
+      // Pointer capture is deliberately NOT set here — only once real dragging is
+      // confirmed below, so a plain click on the tab still reaches its normal
+      // click handlers (switching sheets) instead of being swallowed by capture.
+    });
+
+    tab.addEventListener('pointermove', (e)=>{
+      if(pointerId === null || e.pointerId !== pointerId) return;
+      if(!dragging){
+        if(Math.abs(e.clientX - startX) < DRAG_THRESHOLD && Math.abs(e.clientY - startY) < DRAG_THRESHOLD) return;
+        dragging = true;
+        tab.classList.add('sheet-tab-dragging');
+        tab.setPointerCapture(pointerId);
+        captured = true;
+      }
+      const wrap = document.getElementById('sheetTabs');
+      const siblings = [...wrap.querySelectorAll('.sheet-tab')].filter(t => t !== tab);
+      const x = e.clientX;
+      for(const sib of siblings){
+        const rect = sib.getBoundingClientRect();
+        if(x >= rect.left && x <= rect.right){
+          const insertAfter = x > rect.left + rect.width / 2;
+          if(insertAfter){
+            if(sib.nextSibling !== tab) wrap.insertBefore(tab, sib.nextSibling);
+          } else if(sib !== tab.nextSibling){
+            wrap.insertBefore(tab, sib);
+          }
+          break;
+        }
+      }
+    });
+
+    async function endDrag(e){
+      if(pointerId === null || (e && e.pointerId !== pointerId)) return;
+      if(captured){
+        try{ tab.releasePointerCapture(pointerId); }catch(err){ /* already released */ }
+      }
+      pointerId = null;
+      captured = false;
+      if(!dragging) return;
+      dragging = false;
+      tab.classList.remove('sheet-tab-dragging');
+      tab.dataset.justDragged = '1'; // suppress the click that would otherwise follow
+      const wrap = document.getElementById('sheetTabs');
+      const orderedIds = [...wrap.querySelectorAll('.sheet-tab')].map(t => t.dataset.sheetId);
+      currentProject.sheets.sort((a, b)=> orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
+      await Storage.saveProject(currentProject.id, currentProject);
+    }
+    tab.addEventListener('pointerup', endDrag);
+    tab.addEventListener('pointercancel', endDrag);
+  }
+
+  async function renameSheet(sheet){
+    const name = prompt('シートの新しい名前を入力してください', sheet.name);
+    if(!name || name === sheet.name) return;
+    sheet.name = name;
+    try{
+      await Storage.saveProject(currentProject.id, currentProject);
+      renderSheetTabs();
+      renderProjectSelect();
+      saveStatus.textContent = `シート名を「${name}」に変更しました`;
+      saveStatus.style.color = '#5f7d5b';
+    }catch(e){
+      saveStatus.textContent = 'シート名の変更に失敗しました: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('renameSheet failed:', e);
+    }
+  }
+
+  // Saves whatever's on screen into the sheet we're leaving, then loads the target
+  // sheet's data into the form (switching mode first if needed).
+  // Resets every 見出し部分 field to blank — used when opening a sheet that has no
+  // saved data yet, so header info from the previously active sheet doesn't linger
+  // on screen (each sheet's header fields are independent, just like its table).
+  function clearMetaFields(){
+    ['planTitle','metaDate','metaDayNum','metaMonthDay','metaWeekday','metaWeather',
+     'metaAge','metaClassName','metaStudent','metaTeacher','metaBoys','metaGirls','metaAbsent',
+     'metaMainActivity','metaGoal','metaContent','metaGoalContent','metaTraineeGoal'
+    ].forEach(id=>{ const el = document.getElementById(id); if(el) el.value = ''; });
+  }
+
+  async function switchToSheet(sheetId, alreadyPersisted){
+    if(!currentProject) return;
+    if(!alreadyPersisted && currentSheetId && currentSheetId !== sheetId){
+      await persistCurrentSheet();
+    }
+    const sheet = currentProject.sheets.find(s => s.id === sheetId);
+    if(!sheet) return;
+    currentSheetId = sheetId;
+    currentProject.activeSheetId = sheetId;
+    if(sheet.mode !== currentMode) setMode(sheet.mode);
+    if(sheet.data && sheet.data.rows){
+      applyData(sheet.data);
+    } else {
+      clearMetaFields();
+      body.innerHTML = '';
+      defaultRows();
+    }
+    initColResize();
+    renderSheetTabs();
+    saveStatus.textContent = `「${sheet.name}」を開いています`;
+    saveStatus.style.color = '#5f7d5b';
+  }
+
+  // ---- New-sheet modal (name + mode choice) ----
+  let newSheetModalMode = 'shidouan';
+  function openNewSheetModal(){
+    if(!currentProject) return;
+    document.getElementById('newSheetNameInput').value = '';
+    newSheetModalMode = 'shidouan';
+    document.querySelectorAll('#newSheetModeChoice .modal-mode-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.mode === 'shidouan');
+    });
+    document.getElementById('newSheetModal').style.display = 'flex';
+    document.getElementById('newSheetNameInput').focus();
+  }
+  function closeNewSheetModal(){
+    document.getElementById('newSheetModal').style.display = 'none';
+  }
+  async function confirmNewSheet(){
+    if(!currentProject){
+      closeNewSheetModal();
+      return;
+    }
+    const name = document.getElementById('newSheetNameInput').value.trim();
+    if(!name){
+      document.getElementById('newSheetNameInput').focus();
+      return;
+    }
+    closeNewSheetModal();
+    try{
+      await persistCurrentSheet();
+      const sheet = { id: newId(), name, mode: newSheetModalMode, data: null, updatedAt: new Date().toISOString() };
+      currentProject.sheets.push(sheet);
+      currentSheetId = sheet.id;
+      currentProject.activeSheetId = sheet.id;
+      await Storage.saveProject(currentProject.id, currentProject);
+      if(sheet.mode !== currentMode) setMode(sheet.mode);
+      clearMetaFields();
+      body.innerHTML = '';
+      defaultRows();
+      initColResize();
+      renderSheetTabs();
+      renderProjectSelect();
+      renderProjectBody();
+      saveStatus.textContent = `「${name}」を作成しました`;
+      saveStatus.style.color = '#5f7d5b';
+    }catch(e){
+      saveStatus.textContent = 'シートの作成に失敗しました: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('confirmNewSheet failed:', e);
+    }
+  }
+
+  // Renders the (possibly empty) project: shows the form if a sheet is active, or a
+  // friendly placeholder prompting the person to create their first sheet.
+  function renderProjectBody(){
+    const hasSheets = currentProject && currentProject.sheets.length > 0;
+    document.querySelector('.head').style.display = hasSheets ? '' : 'none';
+    document.querySelector('.table-wrap').style.display = hasSheets ? '' : 'none';
+    document.querySelector('.footer-note').style.display = hasSheets ? '' : 'none';
+    document.getElementById('emptyProjectHint').style.display = hasSheets ? 'none' : 'flex';
+    if(hasSheets) initColResize(); // the table is visible now, so column widths can be measured
+  }
+
+  async function openProject(id){
+    try{
+      await persistCurrentSheet();
+      const project = await Storage.loadProject(id);
+      if(!project){
+        saveStatus.textContent = 'プロジェクトの読み込みに失敗しました';
+        saveStatus.style.color = '#c0503e';
+        return;
+      }
+      currentProject = project;
+      if(!currentProject.sheets) currentProject.sheets = [];
+      currentSheetId = null;
+
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('projectBar').style.display = 'flex';
+      await renderProjectSelect();
+      renderSheetTabs();
+      renderProjectBody();
+
+      if(currentProject.sheets.length){
+        const startSheetId = currentProject.activeSheetId && currentProject.sheets.some(s => s.id === currentProject.activeSheetId)
+          ? currentProject.activeSheetId
+          : currentProject.sheets[0].id;
+        await switchToSheet(startSheetId, true);
+      }
+    }catch(e){
+      saveStatus.textContent = 'プロジェクトを開けませんでした: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('openProject failed:', e);
+    }
+  }
+
+  // Creates a brand-new, empty project (no sheets yet) and opens it directly —
+  // the person then uses the "+" tab to add their first sheet, choosing its mode.
+  async function createNewProjectFlow(){
+    if(!DESKTOP){
+      saveStatus.textContent = '保存機能が利用できません(この画面では未対応の可能性があります)';
+      saveStatus.style.color = '#c0503e';
+      return;
+    }
+    const name = prompt('新しいプロジェクトの名前を入力してください(例: 教育実習1、保育実習1)');
+    if(!name) return;
+    try{
+      await persistCurrentSheet();
+      const project = await Storage.createProject(name);
+      await openProject(project.id);
+    }catch(e){
+      saveStatus.textContent = 'プロジェクトの作成に失敗しました: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('createNewProjectFlow failed:', e);
+    }
+  }
+
+  // ---- Start screen (shown on launch: create new, or pick from existing projects) ----
+  async function renderStartProjectList(){
+    const listEl = document.getElementById('startProjectList');
+    const list = await Storage.listProjects();
+    if(!list.length){
+      listEl.innerHTML = '<div class="start-empty">まだプロジェクトがありません。上のボタンから新しく作成してください。</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    list.forEach(p=>{
+      const item = document.createElement('div');
+      item.className = 'start-project-item';
+      const updated = new Date(p.updatedAt).toLocaleString('ja-JP', { year:'numeric', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      item.innerHTML = `
+        <span>
+          <div class="spi-name">${p.name}</div>
+          <div class="spi-meta">シート ${p.sheetCount}件・最終更新 ${updated}</div>
+        </span>
+        <span>▶</span>
+      `;
+      item.addEventListener('click', ()=> openProject(p.id));
+      listEl.appendChild(item);
+    });
+  }
+
+  async function showStartScreen(){
+    document.getElementById('projectBar').style.display = 'none';
+    document.getElementById('sheetTabs').innerHTML = '';
+    document.getElementById('startScreen').style.display = 'flex';
+    await renderStartProjectList();
+  }
+
+  async function loadData(){
+    if(!DESKTOP){
+      renderColgroup();
+      renderThead();
+      defaultRows();
+      return;
+    }
+    renderColgroup();
+    renderThead();
+    await showStartScreen();
+  }
+
+
+  // Builds a filename like "令和7年06月10日_5歳児ひまわり（色水あそび）" from the plan data.
+  function parseReiwaDateInput(str){
+    if(!str) return null;
+    let m = str.match(/令和\s*(\d+)\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
+    if(m) return { reiwaYear: parseInt(m[1],10), month: parseInt(m[2],10), day: parseInt(m[3],10) };
+    m = str.match(/(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);
+    if(m) return { reiwaYear: parseInt(m[1],10) - 2018, month: parseInt(m[2],10), day: parseInt(m[3],10) };
+    return null;
+  }
+  function buildFileName(d){
+    const parsed = parseReiwaDateInput(d.date);
+    let reiwaYear, month, day;
+    if(parsed){
+      reiwaYear = parsed.reiwaYear; month = parsed.month; day = parsed.day;
+    } else {
+      const now = new Date();
+      reiwaYear = now.getFullYear() - 2018;
+      month = now.getMonth() + 1;
+      day = now.getDate();
+    }
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const dateStr = `令和${reiwaYear}年${mm}月${dd}日`;
+    const ageClass = `${d.age || ''}歳児${d.className || ''}`;
+    const name = `${dateStr}_${ageClass}（${d.title || '保育指導案'}）`;
+    return name.replace(/[\\/:*?"<>|]/g, '');
+  }
+  function buildFileNameJikeiretsu(d){
+    let mm, dd;
+    const m = (d.monthDay || '').match(/(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
+    const now = new Date();
+    if(m){ mm = String(m[1]).padStart(2,'0'); dd = String(m[2]).padStart(2,'0'); }
+    else { mm = String(now.getMonth()+1).padStart(2,'0'); dd = String(now.getDate()).padStart(2,'0'); }
+    const reiwaYear = now.getFullYear() - 2018;
+    const dayLabel = d.dayNum ? `第${d.dayNum}日目_` : '';
+    const ageClass = `${d.age || ''}歳児${d.className || ''}`;
+    const name = `${dayLabel}令和${reiwaYear}年${mm}月${dd}日_${ageClass}`;
+    return name.replace(/[\\/:*?"<>|]/g, '');
+  }
+
+  const HEADER_EXAMPLES = {
+    date: '令和7年6月10日(火)',
+    age: '5',
+    className: 'ひまわり',
+    student: '山田 花子',
+    teacher: '佐藤 太郎',
+    boys: '10',
+    girls: '8',
+    title: '色水あそび',
+    goal: '友だちと一緒に色の変化を楽しみ、発見や気づきを言葉で伝え合う。',
+    content: '色水を作って遊ぶ。友だちと見せ合い、感じたことを伝え合う。'
+  };
+  const ROW_EXAMPLES = {
+    time: '9:00',
+    env: '＜保育室＞室内遊び',
+    prep: 'ペットボトル、絵の具、コップ',
+    child: '色水を作って友だちと見せ合う',
+    support: '色の変化に気づけるよう声をかける'
+  };
+
+  const HEADER_EXAMPLES_JIKEIRETSU = {
+    dayNum: '3',
+    monthDay: '6月4日',
+    weekday: '木曜日',
+    weather: '雨',
+    age: '5',
+    className: 'そら',
+    student: '山田 花子',
+    teacher: '佐藤 太郎',
+    boys: '11',
+    girls: '7',
+    absent: '6',
+    mainActivity: '室内遊び、お店屋さんごっこ',
+    goalContent: '遊びに必要なものを作り、友だちと言葉のやり取りを楽しむ。',
+    traineeGoal: 'その子どもがどんな子どもなのか考え、その子どもに合った声かけをする。'
+  };
+  const ROW_EXAMPLES_JIKEIRETSU = {
+    time: '9:30',
+    child: '朝の挨拶をする。トイレに行く。手を洗う。',
+    env: '＜保育室＞朝の会',
+    support: '一日の流れを、順序立てて視覚的に伝える。',
+    trainee: '子どもに声をかけながら片付けを促す。'
+  };
+
+  // ============================================================
+  // Excel export: 指導案 mode
+  // ============================================================
+  async function exportExcel(){
+    if(typeof ExcelJS === 'undefined'){
+      saveStatus.textContent = 'Excel出力用のライブラリを読み込めませんでした。一度インターネットに接続した状態でアプリを開いてください';
+      saveStatus.style.color = '#c0503e';
+      return;
+    }
+    const d = collectData();
+
+    if(document.getElementById('debugFillCheck').checked){
+      Object.keys(HEADER_EXAMPLES).forEach(key=>{ d[key] = d[key] || HEADER_EXAMPLES[key]; });
+      d.rows = d.rows.map(r => ({
+        time: r.time || ROW_EXAMPLES.time,
+        env: r.env || ROW_EXAMPLES.env,
+        prep: r.prep || ROW_EXAMPLES.prep,
+        child: r.child || ROW_EXAMPLES.child,
+        support: r.support || ROW_EXAMPLES.support,
+        diagram: r.diagram
+      }));
+    }
+
+    const DIAGRAM_ROWS = 11;
+
+    function envCell(row){
+      const parts = [];
+      if(row.env) parts.push(row.env);
+      if(row.prep) parts.push('・' + row.prep);
+      return parts.join('\n');
+    }
+
+    const lineParts = [];
+    if(d.age) lineParts.push(d.age + '歳児');
+    if(d.className) lineParts.push(d.className + '組');
+    if(d.boys) lineParts.push('男児' + d.boys + '名');
+    if(d.girls) lineParts.push('女児' + d.girls + '名');
+    const boysNum = parseInt(d.boys, 10);
+    const girlsNum = parseInt(d.girls, 10);
+    if((d.boys || d.girls) && (!isNaN(boysNum) || !isNaN(girlsNum))){
+      const total = (isNaN(boysNum) ? 0 : boysNum) + (isNaN(girlsNum) ? 0 : girlsNum);
+      lineParts.push('計' + total + '名');
+    }
+    const attendanceLine = lineParts.join('　');
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('全日指導案');
+
+    worksheet.pageSetup = {
+      paperSize: 9,
+      orientation: 'portrait',
+      fitToPage: false,
+      scale: 91,
+      margins: { left:0.01, right:0.01, top:0.01, bottom:0.01, header:0, footer:0 },
+      horizontalCentered: true,
+      verticalCentered: true
+    };
+
+    worksheet.columns = [
+      { width:9 }, { width:6 }, { width:21.375 }, { width:5.625 }, { width:11.625 },
+      { width:9.75 }, { width:4.75 }, { width:16 }, { width:21.125 }, { width:9 }
+    ];
+
+    const TIME = 2, ENV = 3, CHILD_S = 4, CHILD_E = 6, SUP_S = 7, SUP_E = 9;
+    const DATE_E = 5, GOAL_E = 5, CONTENT_S = 6;
+    const ROFF = 1;
+
+    function set(r, c, val){ worksheet.getCell(r + ROFF, c).value = val; }
+    function merge(r1, c1, r2, c2){ worksheet.mergeCells(r1 + ROFF, c1, r2 + ROFF, c2); }
+    function rowH(r, h){ worksheet.getRow(r + ROFF).height = h; }
+
+    const thinBorder = { style:'thin', color:{ argb:'FF000000' } };
+    function boxBorder(r1, c1, r2, c2){
+      for(let rr = r1; rr <= r2; rr++){
+        for(let cc = c1; cc <= c2; cc++){
+          worksheet.getCell(rr + ROFF, cc).border = { top:thinBorder, left:thinBorder, bottom:thinBorder, right:thinBorder };
+        }
+      }
+    }
+    function vBorder(r1, c1, r2, c2){
+      for(let rr = r1; rr <= r2; rr++){
+        for(let cc = c1; cc <= c2; cc++){
+          worksheet.getCell(rr + ROFF, cc).border = { left:thinBorder, right:thinBorder };
+        }
+      }
+    }
+
+    set(1, TIME, '保　育　指　導　案');
+    merge(1, TIME, 1, SUP_E);
+    rowH(1, 28.5);
+
+    rowH(2, 15.75);
+
+    set(3, TIME, d.date || '令和　　年　　月　　日　　曜日');
+    merge(3, TIME, 4, DATE_E);
+    boxBorder(3, TIME, 4, DATE_E);
+    set(3, CHILD_E, '実習生氏名');
+    merge(3, CHILD_E, 3, CHILD_E + 1);
+    boxBorder(3, CHILD_E, 3, CHILD_E + 1);
+    set(3, CHILD_E + 2, d.student || '');
+    merge(3, CHILD_E + 2, 3, SUP_E);
+    boxBorder(3, CHILD_E + 2, 3, SUP_E);
+    set(4, CHILD_E, '指導者氏名');
+    merge(4, CHILD_E, 4, CHILD_E + 1);
+    boxBorder(4, CHILD_E, 4, CHILD_E + 1);
+    set(4, CHILD_E + 2, d.teacher ? `${d.teacher} 先生` : '');
+    merge(4, CHILD_E + 2, 4, SUP_E);
+    boxBorder(4, CHILD_E + 2, 4, SUP_E);
+    rowH(3, 30);
+    rowH(4, 30);
+
+    set(5, TIME, attendanceLine);
+    merge(5, TIME, 5, SUP_E);
+    boxBorder(5, TIME, 5, SUP_E);
+    rowH(5, 26.25);
+
+    set(6, TIME, `主活動\n${d.title || ''}`);
+    merge(6, TIME, 6, SUP_E);
+    boxBorder(6, TIME, 6, SUP_E);
+    rowH(6, 50.1);
+
+    set(7, TIME, `ねらい\n${d.goal || ''}`);
+    merge(7, TIME, 7, GOAL_E);
+    boxBorder(7, TIME, 7, GOAL_E);
+    set(7, CONTENT_S, `内容\n${d.content || ''}`);
+    merge(7, CONTENT_S, 7, SUP_E);
+    boxBorder(7, CONTENT_S, 7, SUP_E);
+    rowH(7, 69.95);
+
+    const headerRows = [];
+    function writeTableHeader(rowNum){
+      set(rowNum, TIME, '時間');
+      boxBorder(rowNum, TIME, rowNum, TIME);
+      set(rowNum, ENV, '環境構成');
+      boxBorder(rowNum, ENV, rowNum, ENV);
+      set(rowNum, CHILD_S, '予想される子どもの活動');
+      merge(rowNum, CHILD_S, rowNum, CHILD_E);
+      boxBorder(rowNum, CHILD_S, rowNum, CHILD_E);
+      set(rowNum, SUP_S, '援助と留意点');
+      merge(rowNum, SUP_S, rowNum, SUP_E);
+      boxBorder(rowNum, SUP_S, rowNum, SUP_E);
+      rowH(rowNum, 27.75);
+      headerRows.push(rowNum);
+    }
+    writeTableHeader(8);
+
+    const PAGE_HEIGHT_IN = 11.69;
+    const MARGIN_TOP_IN = 0.01, MARGIN_BOTTOM_IN = 0.01;
+    const PRINT_SCALE = 0.91;
+    const PAGE_SAFETY = 0.95;
+    const CONTENT_BUDGET_PT = (((PAGE_HEIGHT_IN - MARGIN_TOP_IN - MARGIN_BOTTOM_IN) * 72) / PRINT_SCALE) * PAGE_SAFETY;
+    const HEADER_BLOCK_PT = 28.5 + 15.75 + 30 + 30 + 26.25 + 50.1 + 69.95 + 27.75;
+    const MARGIN_ROW_PT = 12;
+    const SPACER_ROW_PT = 15;
+    const REPEAT_HEADER_PT = 27.75;
+    let pageBudget = CONTENT_BUDGET_PT - MARGIN_ROW_PT - HEADER_BLOCK_PT;
+    const SUBSEQUENT_PAGE_BUDGET = CONTENT_BUDGET_PT - SPACER_ROW_PT - REPEAT_HEADER_PT;
+
+    function bottomLine(rowNum){
+      for(let cc = TIME; cc <= SUP_E; cc++){
+        const cell = worksheet.getCell(rowNum + ROFF, cc);
+        cell.border = Object.assign({}, cell.border, { bottom: thinBorder });
+      }
+    }
+    function fillPageBottom(){
+      const fillerRowHeight = 15;
+      while(pageBudget >= fillerRowHeight){
+        vBorder(r, TIME, r, TIME);
+        vBorder(r, ENV, r, ENV);
+        merge(r, CHILD_S, r, CHILD_E);
+        vBorder(r, CHILD_S, r, CHILD_E);
+        merge(r, SUP_S, r, SUP_E);
+        vBorder(r, SUP_S, r, SUP_E);
+        rowH(r, fillerRowHeight);
+        lastWrittenRow = r;
+        pageBudget -= fillerRowHeight;
+        r++;
+      }
+    }
+
+    let r = 9;
+    let timeAnchor = null, timeEnd = null;
+    let envAnchor = null, envEnd = null;
+    let lastWrittenRow = 8;
+
+    function closeAnchors(){
+      if(timeAnchor !== null && timeEnd > timeAnchor) merge(timeAnchor, TIME, timeEnd, TIME);
+      timeAnchor = null; timeEnd = null;
+      if(envAnchor !== null && envEnd > envAnchor) merge(envAnchor, ENV, envEnd, ENV);
+      envAnchor = null; envEnd = null;
+    }
+
+    function estimateLines(text, colWidthUnits){
+      const charsPerLine = Math.max(1, Math.floor(colWidthUnits / 1.9));
+      const segments = (text || '').split('\n');
+      let total = 0;
+      segments.forEach(seg=>{
+        total += seg.length === 0 ? 1 : Math.ceil(seg.length / charsPerLine);
+      });
+      // 10% safety margin: different computers can render Japanese text at slightly
+      // different widths (font substitution etc.), so estimate a little tall rather
+      // than risk clipping the actual content.
+      return Math.max(1, Math.ceil(total * 1.1));
+    }
+    const TIME_W = 6, ENV_W = 21.375, CHILD_W = 5.625 + 11.625 + 9.75, SUP_W = 4.75 + 16 + 21.125;
+
+    d.rows.forEach(row=>{
+      const timeVal = row.time || '';
+      const envVal = envCell(row);
+      const childVal = row.child || '';
+      const supVal = row.support || '';
+
+      const lineCount = Math.max(
+        estimateLines(timeVal, TIME_W), estimateLines(envVal, ENV_W),
+        estimateLines(childVal, CHILD_W), estimateLines(supVal, SUP_W));
+      const rowHeightPt = Math.max(18, lineCount * 15);
+      const diagramHeightPt = row.diagram ? DIAGRAM_ROWS * SPACER_ROW_PT : 0;
+      const unitHeightPt = rowHeightPt + diagramHeightPt;
+
+      if(pageBudget < unitHeightPt){
+        closeAnchors();
+        fillPageBottom();
+        bottomLine(lastWrittenRow);
+        worksheet.getRow(lastWrittenRow + ROFF).addPageBreak();
+
+        rowH(r, SPACER_ROW_PT);
+        r++;
+        writeTableHeader(r);
+        lastWrittenRow = r;
+        pageBudget = SUBSEQUENT_PAGE_BUDGET;
+        r++;
+      }
+
+      set(r, TIME, timeVal);
+      set(r, ENV, envVal);
+      set(r, CHILD_S, childVal);
+      merge(r, CHILD_S, r, CHILD_E);
+      set(r, SUP_S, supVal);
+      merge(r, SUP_S, r, SUP_E);
+      vBorder(r, TIME, r, TIME);
+      vBorder(r, ENV, r, ENV);
+      vBorder(r, CHILD_S, r, CHILD_E);
+      vBorder(r, SUP_S, r, SUP_E);
+      rowH(r, rowHeightPt);
+      pageBudget -= unitHeightPt;
+
+      if(timeVal.trim() !== ''){
+        if(timeAnchor !== null && timeEnd > timeAnchor) merge(timeAnchor, TIME, timeEnd, TIME);
+        timeAnchor = r; timeEnd = r;
+      } else if(timeAnchor !== null){
+        timeEnd = r;
+      }
+
+      if(envVal.trim() !== ''){
+        if(envAnchor !== null && envEnd > envAnchor) merge(envAnchor, ENV, envEnd, ENV);
+        envAnchor = r; envEnd = r;
+      } else if(envAnchor !== null){
+        envEnd = r;
+      }
+
+      lastWrittenRow = r;
+      r++;
+
+      if(row.diagram){
+        if(envAnchor !== null && envEnd > envAnchor) merge(envAnchor, ENV, envEnd, ENV);
+        envAnchor = null; envEnd = null;
+
+        for(let k = 0; k < DIAGRAM_ROWS; k++){
+          const rr = r + k;
+          merge(rr, CHILD_S, rr, CHILD_E);
+          merge(rr, SUP_S, rr, SUP_E);
+          vBorder(rr, CHILD_S, rr, CHILD_E);
+          vBorder(rr, SUP_S, rr, SUP_E);
+          vBorder(rr, TIME, rr, TIME);
+        }
+
+        merge(r, ENV, r + DIAGRAM_ROWS - 1, ENV);
+        lastWrittenRow = r + DIAGRAM_ROWS - 1;
+        r += DIAGRAM_ROWS;
+      }
+    });
+    closeAnchors();
+    fillPageBottom();
+    bottomLine(lastWrittenRow);
+
+    const lastRow = r - 1;
+    worksheet.pageSetup.printArea = `B2:I${lastRow + ROFF}`;
+
+    const FONT_NAME = 'MS P明朝';
+    for(let rr = 1; rr <= lastRow; rr++){
+      for(let cc = TIME; cc <= SUP_E; cc++){
+        const cell = worksheet.getCell(rr + ROFF, cc);
+        cell.alignment = { horizontal:'left', vertical:'top', wrapText:true };
+        cell.font = { name: FONT_NAME };
+      }
+    }
+
+    const titleCell = worksheet.getCell(1 + ROFF, TIME);
+    titleCell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    titleCell.font = { name: FONT_NAME, size:18, bold:true };
+
+    [[3, TIME], [5, TIME]].forEach(([rowNum, col])=>{
+      worksheet.getCell(rowNum + ROFF, col).alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    });
+    worksheet.getCell(3 + ROFF, TIME).font = { name: FONT_NAME, size:14 };
+
+    [[3, CHILD_E], [3, CHILD_E + 2], [4, CHILD_E], [4, CHILD_E + 2]].forEach(([rowNum, col])=>{
+      worksheet.getCell(rowNum + ROFF, col).alignment = { horizontal:'left', vertical:'middle', wrapText:true, indent:1 };
+    });
+
+    headerRows.forEach(rowNum=>{
+      [TIME, ENV, CHILD_S, SUP_S].forEach(col=>{
+        worksheet.getCell(rowNum + ROFF, col).alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+      });
+    });
+
+    const fileName = buildFileName(d);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileName}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ============================================================
+  // Excel export: 時系列記録 mode
+  // ============================================================
+  async function exportExcelJikeiretsu(){
+    if(typeof ExcelJS === 'undefined'){
+      saveStatus.textContent = 'Excel出力用のライブラリを読み込めませんでした。一度インターネットに接続した状態でアプリを開いてください';
+      saveStatus.style.color = '#c0503e';
+      return;
+    }
+    const d = collectData();
+    const DIAGRAM_ROWS = 11;
+
+    if(document.getElementById('debugFillCheck').checked){
+      Object.keys(HEADER_EXAMPLES_JIKEIRETSU).forEach(key=>{ d[key] = d[key] || HEADER_EXAMPLES_JIKEIRETSU[key]; });
+      d.rows = d.rows.map(r => ({
+        time: r.time || ROW_EXAMPLES_JIKEIRETSU.time,
+        child: r.child || ROW_EXAMPLES_JIKEIRETSU.child,
+        env: r.env || ROW_EXAMPLES_JIKEIRETSU.env,
+        support: r.support || ROW_EXAMPLES_JIKEIRETSU.support,
+        trainee: r.trainee || ROW_EXAMPLES_JIKEIRETSU.trainee,
+        diagram: r.diagram
+      }));
+    }
+
+    const lineParts = [];
+    if(d.age) lineParts.push(d.age + '歳児');
+    if(d.className) lineParts.push(d.className + '組');
+    if(d.boys) lineParts.push('男児' + d.boys + '名');
+    if(d.girls) lineParts.push('女児' + d.girls + '名');
+    const boysNum = parseInt(d.boys, 10);
+    const girlsNum = parseInt(d.girls, 10);
+    if((d.boys || d.girls) && (!isNaN(boysNum) || !isNaN(girlsNum))){
+      const total = (isNaN(boysNum) ? 0 : boysNum) + (isNaN(girlsNum) ? 0 : girlsNum);
+      lineParts.push('計' + total + '名');
+    }
+    if(d.absent) lineParts.push('欠席' + d.absent + '名');
+    const attendanceLine = lineParts.join('　');
+
+    const dayLine = d.dayNum ? `第　　　　${d.dayNum}日目` : '第　　　　日目';
+    const dateLine = [d.monthDay, d.weekday].filter(Boolean).join('　');
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('時系列記録');
+
+    // Page setup copied directly from the reference sample (AI用サンプル日誌.xlsx「日誌３日目」)
+    worksheet.pageSetup = {
+      paperSize: 9,
+      orientation: 'portrait',
+      fitToPage: false,
+      scale: 90,
+      margins: { left:0.1968503937007874, right:0.1968503937007874, top:0.3937007874015748, bottom:0.1968503937007874, header:0.31496062992125984, footer:0.31496062992125984 },
+      horizontalCentered: true,
+      verticalCentered: true
+    };
+
+    // Column widths copied directly from the reference sample.
+    // A and K are the sample's blank margin columns.
+    worksheet.columns = [
+      { width:9 },       // A margin
+      { width:7.125 },   // B 時間
+      { width:4 },       // C 子どもの活動(1/2)
+      { width:18.5 },    // D 子どもの活動(2/2)
+      { width:5.375 },   // E 環境構成・準備(1/3)
+      { width:9.625 },   // F 環境構成・準備(2/3)
+      { width:1.875 },   // G 環境構成・準備(3/3)
+      { width:8.875 },   // H 保育者の援助・かかわり(1/2)
+      { width:18.5 },    // I 保育者の援助・かかわり(2/2)
+      { width:22.875 },  // J 実習生の活動・気づき
+      { width:9 }        // K margin
+    ];
+
+    // Column indices (1-based) matching the sample's B–J content area
+    const TIME = 2;
+    const CHILD_S = 3, CHILD_E = 4;
+    const ENV_S = 5, ENV_E = 7;
+    const SUP_S = 8, SUP_E = 9;
+    const TR = 10;
+    const FULL_END = TR;
+    const ROFF = 1; // row1 is a blank top margin row, like the sample
+
+    function set(r, c, val){ worksheet.getCell(r + ROFF, c).value = val; }
+    function merge(r1, c1, r2, c2){ worksheet.mergeCells(r1 + ROFF, c1, r2 + ROFF, c2); }
+    function rowH(r, h){ worksheet.getRow(r + ROFF).height = h; }
+
+    const thinBorder = { style:'thin', color:{ argb:'FF000000' } };
+    function boxBorder(r1, c1, r2, c2){
+      for(let rr = r1; rr <= r2; rr++){
+        for(let cc = c1; cc <= c2; cc++){
+          worksheet.getCell(rr + ROFF, cc).border = { top:thinBorder, left:thinBorder, bottom:thinBorder, right:thinBorder };
+        }
+      }
+    }
+    function vBorder(r1, c1, r2, c2){
+      for(let rr = r1; rr <= r2; rr++){
+        for(let cc = c1; cc <= c2; cc++){
+          worksheet.getCell(rr + ROFF, cc).border = { left:thinBorder, right:thinBorder };
+        }
+      }
+    }
+
+    // ---- Header block (rows 1–7), sized to match the sample exactly ----
+    set(1, TIME, dayLine);
+    merge(1, TIME, 1, CHILD_E);         // B2:D2 in the sample
+    rowH(1, 18.75);
+
+    set(2, TIME, dateLine);
+    merge(2, TIME, 3, CHILD_E);         // B3:D4 (spans 2 rows)
+    boxBorder(2, TIME, 3, CHILD_E);
+    set(2, ENV_S, '天候');
+    merge(2, ENV_S, 3, ENV_S);          // E3:E4 (label, spans 2 rows)
+    boxBorder(2, ENV_S, 3, ENV_S);
+    set(2, ENV_S + 1, d.weather || '');
+    merge(2, ENV_S + 1, 3, ENV_S + 1);  // F3:F4 (value, spans 2 rows)
+    boxBorder(2, ENV_S + 1, 3, ENV_S + 1);
+    set(2, ENV_S + 2, d.student ? `実習生氏名　　${d.student}` : '実習生氏名');
+    merge(2, ENV_S + 2, 2, FULL_END);   // G3:J3
+    boxBorder(2, ENV_S + 2, 2, FULL_END);
+    set(3, ENV_S + 2, d.teacher ? `指導者氏名　　${d.teacher}` : '指導者氏名');
+    merge(3, ENV_S + 2, 3, FULL_END);   // G4:J4
+    boxBorder(3, ENV_S + 2, 3, FULL_END);
+    rowH(2, 28.5);
+    rowH(3, 27.0);
+
+    set(4, TIME, attendanceLine);
+    merge(4, TIME, 4, FULL_END);        // B5:J5
+    boxBorder(4, TIME, 4, FULL_END);
+    rowH(4, 29.25);
+
+    set(5, TIME, '主な\n活動');
+    boxBorder(5, TIME, 5, TIME);
+    set(5, CHILD_S, d.mainActivity || '');
+    merge(5, CHILD_S, 5, ENV_E);        // C6:G6
+    boxBorder(5, CHILD_S, 5, ENV_E);
+    set(5, SUP_S, 'ねらい\n内容');
+    boxBorder(5, SUP_S, 5, SUP_S);
+    set(5, SUP_S + 1, d.goalContent || '');
+    merge(5, SUP_S + 1, 5, FULL_END);   // I6:J6
+    boxBorder(5, SUP_S + 1, 5, FULL_END);
+    rowH(5, 50.25);
+
+    set(6, TIME, `実習のねらい\n${d.traineeGoal || ''}`);
+    merge(6, TIME, 6, FULL_END);        // B7:J7
+    boxBorder(6, TIME, 6, FULL_END);
+    rowH(6, 36.0);
+
+    const headerRows = [];
+    function writeTableHeader(rowNum){
+      set(rowNum, TIME, '時間');
+      boxBorder(rowNum, TIME, rowNum, TIME);
+      set(rowNum, CHILD_S, '子どもの活動');
+      merge(rowNum, CHILD_S, rowNum, CHILD_E);
+      boxBorder(rowNum, CHILD_S, rowNum, CHILD_E);
+      set(rowNum, ENV_S, '環境構成・準備');
+      merge(rowNum, ENV_S, rowNum, ENV_E);
+      boxBorder(rowNum, ENV_S, rowNum, ENV_E);
+      set(rowNum, SUP_S, '保育者の援助・かかわり');
+      merge(rowNum, SUP_S, rowNum, SUP_E);
+      boxBorder(rowNum, SUP_S, rowNum, SUP_E);
+      set(rowNum, TR, '実習生の活動・気づき');
+      boxBorder(rowNum, TR, rowNum, TR);
+      rowH(rowNum, 32.1);
+      headerRows.push(rowNum);
+    }
+    writeTableHeader(7);
+
+    // ---- A4 page budget, calibrated against the sample's real print setup ----
+    const PAGE_HEIGHT_IN = 11.69;
+    const MARGIN_TOP_IN = 0.3937007874015748, MARGIN_BOTTOM_IN = 0.1968503937007874;
+    const PRINT_SCALE = 0.90;
+    const PAGE_SAFETY = 0.95;
+    const CONTENT_BUDGET_PT = (((PAGE_HEIGHT_IN - MARGIN_TOP_IN - MARGIN_BOTTOM_IN) * 72) / PRINT_SCALE) * PAGE_SAFETY;
+    const HEADER_BLOCK_PT = 18.75 + 28.5 + 27.0 + 29.25 + 50.25 + 36.0 + 32.1;
+    const MARGIN_ROW_PT = 13.5;
+    const SPACER_ROW_PT = 21.0;
+    const REPEAT_HEADER_PT = 32.1;
+    const DEFAULT_ROW_PT = 13.5;
+    let pageBudget = CONTENT_BUDGET_PT - MARGIN_ROW_PT - HEADER_BLOCK_PT;
+    const SUBSEQUENT_PAGE_BUDGET = CONTENT_BUDGET_PT - SPACER_ROW_PT - REPEAT_HEADER_PT;
+
+    function bottomLine(rowNum){
+      for(let cc = TIME; cc <= FULL_END; cc++){
+        const cell = worksheet.getCell(rowNum + ROFF, cc);
+        cell.border = Object.assign({}, cell.border, { bottom: thinBorder });
+      }
+    }
+    function fillPageBottom(){
+      while(pageBudget >= DEFAULT_ROW_PT){
+        vBorder(r, TIME, r, TIME);
+        merge(r, CHILD_S, r, CHILD_E); vBorder(r, CHILD_S, r, CHILD_E);
+        merge(r, ENV_S, r, ENV_E); vBorder(r, ENV_S, r, ENV_E);
+        merge(r, SUP_S, r, SUP_E); vBorder(r, SUP_S, r, SUP_E);
+        vBorder(r, TR, r, TR);
+        rowH(r, DEFAULT_ROW_PT);
+        lastWrittenRow = r;
+        pageBudget -= DEFAULT_ROW_PT;
+        r++;
+      }
+    }
+
+    // ---- Data rows: one activity per row, starting below the header block ----
+    let r = 8;
+    let timeAnchor = null, timeEnd = null;
+    let envAnchor = null, envEnd = null;
+    let lastWrittenRow = 7;
+
+    function closeAnchors(){
+      if(timeAnchor !== null && timeEnd > timeAnchor) merge(timeAnchor, TIME, timeEnd, TIME);
+      timeAnchor = null; timeEnd = null;
+      if(envAnchor !== null) merge(envAnchor, ENV_S, envEnd, ENV_E);
+      envAnchor = null; envEnd = null;
+    }
+
+    function estimateLines(text, colWidthUnits){
+      const charsPerLine = Math.max(1, Math.floor(colWidthUnits / 1.9));
+      const segments = (text || '').split('\n');
+      let total = 0;
+      segments.forEach(seg=>{
+        total += seg.length === 0 ? 1 : Math.ceil(seg.length / charsPerLine);
+      });
+      // 10% safety margin: different computers can render Japanese text at slightly
+      // different widths (font substitution etc.), so estimate a little tall rather
+      // than risk clipping the actual content.
+      return Math.max(1, Math.ceil(total * 1.1));
+    }
+    const TIME_W = 7.125, CHILD_W = 4 + 18.5, ENV_W = 5.375 + 9.625 + 1.875, SUP_W = 8.875 + 18.5, TR_W = 22.875;
+
+    d.rows.forEach(row=>{
+      const timeVal = row.time || '';
+      const envVal = row.env || '';
+      const childVal = row.child || '';
+      const supVal = row.support || '';
+      const traineeVal = row.trainee || '';
+
+      const lineCount = Math.max(
+        estimateLines(timeVal, TIME_W), estimateLines(childVal, CHILD_W),
+        estimateLines(envVal, ENV_W), estimateLines(supVal, SUP_W), estimateLines(traineeVal, TR_W));
+      const rowHeightPt = Math.max(DEFAULT_ROW_PT, lineCount * 13.5);
+      const diagramHeightPt = row.diagram ? DIAGRAM_ROWS * DEFAULT_ROW_PT : 0;
+      const unitHeightPt = rowHeightPt + diagramHeightPt;
+
+      if(pageBudget < unitHeightPt){
+        closeAnchors();
+        fillPageBottom();
+        bottomLine(lastWrittenRow);
+        worksheet.getRow(lastWrittenRow + ROFF).addPageBreak();
+
+        rowH(r, SPACER_ROW_PT);
+        r++;
+        writeTableHeader(r);
+        lastWrittenRow = r;
+        pageBudget = SUBSEQUENT_PAGE_BUDGET;
+        r++;
+      }
+
+      set(r, TIME, timeVal);
+      set(r, CHILD_S, childVal);
+      merge(r, CHILD_S, r, CHILD_E);
+      set(r, ENV_S, envVal);
+      set(r, SUP_S, supVal);
+      merge(r, SUP_S, r, SUP_E);
+      set(r, TR, traineeVal);
+      vBorder(r, TIME, r, TIME);
+      vBorder(r, CHILD_S, r, CHILD_E);
+      vBorder(r, ENV_S, r, ENV_E);
+      vBorder(r, SUP_S, r, SUP_E);
+      vBorder(r, TR, r, TR);
+      rowH(r, rowHeightPt);
+      pageBudget -= unitHeightPt;
+
+      if(timeVal.trim() !== ''){
+        if(timeAnchor !== null && timeEnd > timeAnchor) merge(timeAnchor, TIME, timeEnd, TIME);
+        timeAnchor = r; timeEnd = r;
+      } else if(timeAnchor !== null){
+        timeEnd = r;
+      }
+
+      if(envVal.trim() !== ''){
+        if(envAnchor !== null) merge(envAnchor, ENV_S, envEnd, ENV_E);
+        envAnchor = r; envEnd = r;
+      } else if(envAnchor !== null){
+        envEnd = r;
+      }
+
+      lastWrittenRow = r;
+      r++;
+
+      if(row.diagram){
+        if(envAnchor !== null) merge(envAnchor, ENV_S, envEnd, ENV_E);
+        envAnchor = null; envEnd = null;
+
+        for(let k = 0; k < DIAGRAM_ROWS; k++){
+          const rr = r + k;
+          merge(rr, CHILD_S, rr, CHILD_E); vBorder(rr, CHILD_S, rr, CHILD_E);
+          merge(rr, SUP_S, rr, SUP_E); vBorder(rr, SUP_S, rr, SUP_E);
+          vBorder(rr, TR, rr, TR);
+          vBorder(rr, TIME, rr, TIME);
+        }
+
+        merge(r, ENV_S, r + DIAGRAM_ROWS - 1, ENV_E); // blank drawing space (no border)
+        lastWrittenRow = r + DIAGRAM_ROWS - 1;
+        r += DIAGRAM_ROWS;
+      }
+    });
+    closeAnchors();
+    fillPageBottom();
+    bottomLine(lastWrittenRow);
+
+    const lastRow = r - 1;
+    worksheet.pageSetup.printArea = `B2:J${lastRow + ROFF}`;
+
+    const FONT_NAME = 'MS P明朝';
+    for(let rr = 1; rr <= lastRow; rr++){
+      for(let cc = TIME; cc <= FULL_END; cc++){
+        const cell = worksheet.getCell(rr + ROFF, cc);
+        cell.alignment = { horizontal:'left', vertical:'top', wrapText:true };
+        cell.font = { name: FONT_NAME };
+      }
+    }
+
+    // 第X日目: centered (no border, no special font — a plain corner label)
+    worksheet.getCell(1 + ROFF, TIME).alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+
+    // 月日・曜日: centered, slightly larger font
+    worksheet.getCell(2 + ROFF, TIME).alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    worksheet.getCell(2 + ROFF, TIME).font = { name: FONT_NAME, size:13 };
+
+    // 天候(ラベル・値) / 出席行: centered both ways
+    [[2, ENV_S], [2, ENV_S + 1], [4, TIME]].forEach(([rowNum, col])=>{
+      worksheet.getCell(rowNum + ROFF, col).alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    });
+
+    // 実習生氏名・指導者氏名: left-aligned with a slight indent, vertical-centered
+    [[2, ENV_S + 2], [3, ENV_S + 2]].forEach(([rowNum, col])=>{
+      worksheet.getCell(rowNum + ROFF, col).alignment = { horizontal:'left', vertical:'middle', wrapText:true, indent:1 };
+    });
+
+    // 主な活動・ねらい内容(ラベル・値とも): vertical-centered
+    [[5, TIME], [5, CHILD_S], [5, SUP_S], [5, SUP_S + 1]].forEach(([rowNum, col])=>{
+      worksheet.getCell(rowNum + ROFF, col).alignment = { horizontal:'left', vertical:'middle', wrapText:true };
+    });
+
+    // Table header row(s): centered both ways
+    headerRows.forEach(rowNum=>{
+      [TIME, CHILD_S, ENV_S, SUP_S, TR].forEach(col=>{
+        worksheet.getCell(rowNum + ROFF, col).alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+      });
+    });
+
+    const fileName = buildFileNameJikeiretsu(d);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileName}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('addRowBtn').addEventListener('click', ()=>{ addRow(); markUnsaved(); });
+  document.getElementById('excelBtn').addEventListener('click', ()=>{
+    if(currentMode === 'jikeiretsu') exportExcelJikeiretsu(); else exportExcel();
+  });
+
+  // Holds the on-disk file handle for each sheet, for the current browser session
+  // only (File System Access API — Chrome/Edge), mirroring the project-level one.
+  const sheetFileHandles = {};
+  const sheetExportPaths = {}; // desktop app: last file each sheet was saved to
+
+  document.getElementById('jsonExportBtn').addEventListener('click', async ()=>{
+    if(!currentProject){
+      saveStatus.textContent = '先にプロジェクトを開いてください';
+      saveStatus.style.color = '#c07a3e';
+      return;
+    }
+    try{
+      const sheet = activeSheet();
+      if(!sheet){
+        saveStatus.textContent = '先にシートを作成してください';
+        saveStatus.style.color = '#c07a3e';
+        return;
+      }
+      const data = collectData();
+      sheet.exportVersion = (sheet.exportVersion || 0) + 1;
+      await Storage.saveProject(currentProject.id, currentProject); // Plan B: browser backup
+      const jsonStr = JSON.stringify(data, null, 2);
+      const safeName = sheet.name.replace(/[\\/:*?"<>|]/g, '');
+
+      if(APP){
+        const res = await APP.saveJson(`${safeName}.json`, jsonStr, sheetExportPaths[sheet.id]);
+        if(res.saved){
+          sheetExportPaths[sheet.id] = res.filePath;
+          saveStatus.textContent = `「${res.filePath.split(/[\\/]/).pop()}」に保存しました`;
+          saveStatus.style.color = '#5f7d5b';
+        }
+        return;
+      }
+
+      if('showSaveFilePicker' in window){
+        try{
+          let handle = sheetFileHandles[sheet.id];
+          if(!handle){
+            handle = await window.showSaveFilePicker({
+              suggestedName: `${safeName}.json`,
+              types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+            });
+            sheetFileHandles[sheet.id] = handle;
+          }
+          const writable = await handle.createWritable();
+          await writable.write(jsonStr);
+          await writable.close();
+          saveStatus.textContent = `「${handle.name}」に上書き保存しました`;
+          saveStatus.style.color = '#5f7d5b';
+          return;
+        }catch(pickerErr){
+          if(pickerErr && pickerErr.name === 'AbortError') return; // person cancelled the dialog
+          console.error('showSaveFilePicker failed, falling back to download:', pickerErr);
+          // fall through to the plain-download fallback below
+        }
+      }
+
+      // Fallback for browsers without the File System Access API: a normal download.
+      const blob = new Blob([jsonStr], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      renderProjectSelect();
+      saveStatus.textContent = 'このシートを書き出しました(このブラウザでは上書き保存に対応していないため、毎回新しいファイルとして保存されます)';
+      saveStatus.style.color = '#5f7d5b';
+    }catch(e){
+      saveStatus.textContent = 'シートの書き出しに失敗しました: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('jsonExport failed:', e);
+    }
+  });
+
+  // Holds the on-disk file handle for each project, for the current browser session
+  // only (File System Access API — Chrome/Edge). Once a person picks a save location
+  // the first time, later saves silently overwrite that same file instead of
+  // downloading a new copy each time. Unsupported browsers fall back to a normal
+  // download every time (see the fallback branch below).
+  const projectFileHandles = {};
+
+  document.getElementById('jsonExportProjectBtn').addEventListener('click', async ()=>{
+    if(!currentProject){
+      saveStatus.textContent = '先にプロジェクトを開いてください';
+      saveStatus.style.color = '#c07a3e';
+      return;
+    }
+    if(APP){
+      // Desktop app: the project file is already kept up to date automatically;
+      // this saves right now and always takes a backup snapshot as well.
+      try{
+        await persistCurrentSheet();
+        const r = await APP.saveProject(currentProject.id, currentProject, { snapshot:true });
+        saveStatus.textContent = r.snapshot ? '保存しました(バックアップも作成しました)' : '保存しました(前回のバックアップから変更がないため、新しいバックアップは作っていません)';
+        saveStatus.style.color = '#5f7d5b';
+      }catch(e){
+        saveStatus.textContent = '保存に失敗しました: ' + (e && e.message ? e.message : String(e));
+        saveStatus.style.color = '#c0503e';
+        console.error('project save failed:', e);
+      }
+      return;
+    }
+    try{
+      await persistCurrentSheet(); // make sure the sheet on screen is included
+      currentProject.exportVersion = (currentProject.exportVersion || 0) + 1;
+      await Storage.saveProject(currentProject.id, currentProject); // Plan B: browser backup
+      const jsonStr = JSON.stringify(currentProject, null, 2);
+      const safeName = currentProject.name.replace(/[\\/:*?"<>|]/g, '');
+
+      if('showSaveFilePicker' in window){
+        try{
+          let handle = projectFileHandles[currentProject.id];
+          if(!handle){
+            handle = await window.showSaveFilePicker({
+              suggestedName: `${safeName}.json`,
+              types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+            });
+            projectFileHandles[currentProject.id] = handle;
+          }
+          const writable = await handle.createWritable();
+          await writable.write(jsonStr);
+          await writable.close();
+          saveStatus.textContent = `「${handle.name}」に上書き保存しました`;
+          saveStatus.style.color = '#5f7d5b';
+          return;
+        }catch(pickerErr){
+          if(pickerErr && pickerErr.name === 'AbortError') return; // person cancelled the dialog
+          console.error('showSaveFilePicker failed, falling back to download:', pickerErr);
+          // fall through to the plain-download fallback below
+        }
+      }
+
+      // Fallback for browsers without the File System Access API: a normal download.
+      // This can't overwrite an existing file, so the browser may add "(1)" etc.
+      // to the filename if one with the same name already exists in Downloads.
+      const blob = new Blob([jsonStr], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      saveStatus.textContent = 'プロジェクトを書き出しました(このブラウザでは上書き保存に対応していないため、毎回新しいファイルとして保存されます)';
+      saveStatus.style.color = '#5f7d5b';
+    }catch(e){
+      saveStatus.textContent = 'プロジェクトの保存に失敗しました: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('jsonExportProject failed:', e);
+    }
+  });
+
+  document.getElementById('jsonImportBtn').addEventListener('click', ()=>{
+    document.getElementById('jsonImportInput').click();
+  });
+
+  document.getElementById('jsonImportInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async ()=>{
+      try{
+        const parsed = JSON.parse(reader.result);
+        if(parsed && Array.isArray(parsed.sheets)){
+          // Whole-project file (from "プロジェクトを保存"): register it as a project
+          // of its own so it shows up in "既存のプロジェクトを開く", and open it.
+          const newProject = Object.assign({}, parsed, { id: newId() });
+          await Storage.saveProject(newProject.id, newProject);
+          await openProject(newProject.id);
+          saveStatus.textContent = `プロジェクト「${newProject.name}」を読み込みました`;
+          saveStatus.style.color = '#5f7d5b';
+        } else {
+          // Single-sheet file (from "このシートを書き出し"): load into the sheet
+          // that's currently open.
+          applyData(parsed);
+          initColResize();
+          saveStatus.textContent = 'シートのデータを読み込みました';
+          saveStatus.style.color = '#5f7d5b';
+        }
+      }catch(err){
+        saveStatus.textContent = 'ファイルの読み込みに失敗しました(形式が正しくない可能性があります)';
+        saveStatus.style.color = '#c0503e';
+        console.error('jsonImport failed:', err);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('projectSelect').addEventListener('change', (e)=>{
+    openProject(e.target.value);
+  });
+  document.getElementById('projectNewBtn').addEventListener('click', createNewProjectFlow);
+  document.getElementById('startNewProjectBtn').addEventListener('click', createNewProjectFlow);
+
+  document.getElementById('newSheetCancelBtn').addEventListener('click', closeNewSheetModal);
+  document.getElementById('newSheetCreateBtn').addEventListener('click', confirmNewSheet);
+  document.getElementById('newSheetNameInput').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); confirmNewSheet(); }
+  });
+  document.querySelectorAll('#newSheetModeChoice .modal-mode-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      newSheetModalMode = btn.dataset.mode;
+      document.querySelectorAll('#newSheetModeChoice .modal-mode-btn').forEach(b=>{
+        b.classList.toggle('active', b === btn);
+      });
+    });
+  });
+  document.getElementById('projectRenameBtn').addEventListener('click', async ()=>{
+    if(!currentProject){
+      saveStatus.textContent = '先にプロジェクトを開いてください';
+      saveStatus.style.color = '#c07a3e';
+      return;
+    }
+    const name = prompt('新しいプロジェクト名を入力してください', currentProject.name);
+    if(!name || name === currentProject.name) return;
+    try{
+      await Storage.renameProject(currentProject.id, name);
+      currentProject.name = name;
+      await renderProjectSelect();
+      saveStatus.textContent = `プロジェクト名を「${name}」に変更しました`;
+      saveStatus.style.color = '#5f7d5b';
+    }catch(e){
+      saveStatus.textContent = 'プロジェクト名の変更に失敗しました: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('projectRename failed:', e);
+    }
+  });
+  document.getElementById('projectDeleteBtn').addEventListener('click', async ()=>{
+    if(!currentProject){
+      saveStatus.textContent = '先にプロジェクトを開いてください';
+      saveStatus.style.color = '#c07a3e';
+      return;
+    }
+    if(!confirm(`プロジェクト「${currentProject.name}」を削除しますか?中のシートもすべて削除されます。`)) return;
+    try{
+      await Storage.deleteProject(currentProject.id);
+      currentProject = null;
+      currentSheetId = null;
+      await loadData();
+      initColResize();
+    }catch(e){
+      saveStatus.textContent = 'プロジェクトの削除に失敗しました: ' + (e && e.message ? e.message : String(e));
+      saveStatus.style.color = '#c0503e';
+      console.error('projectDelete failed:', e);
+    }
+  });
+
+  document.addEventListener('input', (e)=>{
+    if(e.target.closest('.sheet')){
+      markUnsaved();
+      scheduleAutosave();
+    }
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && e.target.classList && e.target.classList.contains('cell')){
+      e.preventDefault();
+      document.execCommand('insertLineBreak');
+    }
+  });
+
+  if(DESKTOP){
+    setInterval(autosaveNow, 20000); // safety-net autosave every 20s regardless of activity
+    window.addEventListener('beforeunload', ()=>{ autosaveNow(); });
+  }
+
+  // ============================================================
+  // PWA support: install as an app, work offline, and pick up new versions
+  // ============================================================
+  // ★ Change this number every time a new version is published. Installed copies
+  //   notice the difference and offer to reload into the new version.
+  const APP_VERSION = '1.0.0';
+
+  const versionLabel = document.getElementById('appVersionLabel');
+  if(versionLabel) versionLabel.textContent = 'バージョン ' + APP_VERSION;
+
+  function showToast(message){
+    const t = document.createElement('div');
+    t.className = 'app-toast';
+    t.textContent = message;
+    document.body.appendChild(t);
+    setTimeout(()=> t.remove(), 6000);
+  }
+
+  let dismissedVersion = null;
+  function showUpdateBanner(newVersion){
+    if(document.getElementById('updateBanner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'updateBanner';
+    bar.className = 'update-banner';
+    bar.innerHTML = `<span>新しいバージョン ${newVersion} があります</span>
+      <button type="button" class="ub-primary" id="updateNowBtn">今すぐ更新</button>
+      <button type="button" class="ub-ghost" id="updateLaterBtn">あとで</button>`;
+    document.body.appendChild(bar);
+    document.getElementById('updateNowBtn').addEventListener('click', async ()=>{
+      try{ await autosaveNow(); }catch(e){ /* best effort: back up to the browser first */ }
+      location.reload();
+    });
+    document.getElementById('updateLaterBtn').addEventListener('click', ()=>{
+      dismissedVersion = newVersion;
+      bar.remove();
+    });
+  }
+
+  // Looks at the latest published copy of this page and compares its version number.
+  async function checkForUpdate(){
+    if(!/^https?:$/.test(location.protocol) || navigator.onLine === false) return;
+    try{
+      const res = await fetch(location.href.split('#')[0], { cache:'no-store' });
+      if(!res.ok) return;
+      const html = await res.text();
+      const m = html.match(new RegExp('APP_VERSION' + " = '([^']+)'"));
+      if(m && m[1] !== APP_VERSION && m[1] !== dismissedVersion) showUpdateBanner(m[1]);
+    }catch(e){ /* offline or blocked — nothing to do */ }
+  }
+
+  // Tell the person once when the app has just been updated to a new version.
+  try{
+    const lastSeen = localStorage.getItem('hoiku-last-version');
+    if(lastSeen && lastSeen !== APP_VERSION) showToast(`バージョン ${APP_VERSION} に更新されました`);
+    localStorage.setItem('hoiku-last-version', APP_VERSION);
+  }catch(e){ /* storage unavailable */ }
+
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('sw.js').catch(err=> console.warn('Service worker registration failed:', err));
+    });
+    setTimeout(checkForUpdate, 5000);
+    setInterval(checkForUpdate, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') checkForUpdate(); });
+    window.addEventListener('online', checkForUpdate);
+  }
+  // Ask the browser not to evict this app's saved data when disk space runs low.
+  if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+  // ============================================================
+  // Desktop app (Electron): real files on disk, auto-update, safe close
+  // ============================================================
+  if(APP){
+    document.querySelectorAll('.app-only').forEach(el=>{ el.style.display = ''; });
+
+    document.getElementById('saveProjectLabel').textContent = '今すぐ保存';
+    document.getElementById('jsonExportProjectBtn').title = '今の内容をすぐ保存し、バックアップも作成します(通常は入力すると自動で保存されます)';
+    document.getElementById('autosaveDot').title = '自動保存(パソコン内の保存フォルダに保存されます)';
+
+    const footerEl = document.getElementById('footerText');
+    function refreshDataDirLabels(dir){
+      const startPath = document.getElementById('startDataDir');
+      if(startPath) startPath.textContent = '保存先: ' + dir;
+      if(footerEl){
+        footerEl.textContent = '各セルをクリックして直接入力できます。列の境界をドラッグ、またはダブルクリックで幅をpx指定できます。'
+          + '入力した内容は自動的に、パソコン内の保存フォルダにファイルとして保存されます(右上の緑の点が点滅)。'
+          + '「今すぐ保存」を押すと、その時点のバックアップも作られ、バックアップは保存フォルダ内の「バックアップ」フォルダに残ります(「バックアップを見る」から開けます)。'
+          + '保存先: ' + dir + ' 。'
+          + '環境構成の欄にある「環境図を描くスペースを空ける」にチェックすると、Excel出力時にそのセルの下に11行分の空白(手描き用)が入ります。';
+      }
+    }
+    APP.getDataDir().then(refreshDataDirLabels).catch(()=>{});
+
+    // Version shown in the footer comes from the installed app itself.
+    const uiMeta = document.querySelector('meta[name="ui-version"]');
+    const uiVersion = uiMeta ? uiMeta.content : '';
+    APP.getVersion().then(v=>{
+      if(versionLabel) versionLabel.textContent = 'バージョン ' + v + (uiVersion ? '(画面 ' + uiVersion + ')' : '');
+      try{
+        const last = localStorage.getItem('hoiku-last-app-version');
+        if(last && last !== v) showToast(`バージョン ${v} に更新されました`);
+        localStorage.setItem('hoiku-last-app-version', v);
+      }catch(e){ /* storage unavailable */ }
+    }).catch(()=>{});
+
+    // Automatic updates: the main process downloads them in the background.
+    function showAppUpdateBanner(version){
+      if(document.getElementById('updateBanner')) return;
+      const bar = document.createElement('div');
+      bar.id = 'updateBanner';
+      bar.className = 'update-banner';
+      bar.innerHTML = `<span>新しいバージョン ${version} の準備ができました(このまま終了しても、次回自動で更新されます)</span>
+        <button type="button" class="ub-primary" id="updateNowBtn">再起動して更新</button>
+        <button type="button" class="ub-ghost" id="updateLaterBtn">あとで</button>`;
+      document.body.appendChild(bar);
+      document.getElementById('updateNowBtn').addEventListener('click', async ()=>{
+        try{ await autosaveNow(); }catch(e){ /* best effort */ }
+        APP.installUpdate();
+      });
+      document.getElementById('updateLaterBtn').addEventListener('click', ()=> bar.remove());
+    }
+    APP.onUpdateStatus((s)=>{
+      if(s.state === 'downloading') showToast(`新しいバージョン ${s.version} をダウンロードしています…`);
+      if(s.state === 'ready') showAppUpdateBanner(s.version);
+    });
+
+    // Screen patches: a newer version of this page (only the screen, not the whole app) was
+    // downloaded in the background. It takes effect on the next start, or right now if asked.
+    function showUiPatchBanner(version){
+      if(document.getElementById('uiPatchBanner')) return;
+      const bar = document.createElement('div');
+      bar.id = 'uiPatchBanner';
+      bar.className = 'update-banner';
+      bar.innerHTML = `<span>画面の更新(バージョン ${version})を受け取りました(次回起動時にも自動で反映されます)</span>
+        <button type="button" class="ub-primary" id="uiPatchNowBtn">今すぐ反映</button>
+        <button type="button" class="ub-ghost" id="uiPatchLaterBtn">あとで</button>`;
+      document.body.appendChild(bar);
+      document.getElementById('uiPatchNowBtn').addEventListener('click', async ()=>{
+        try{ await autosaveNow(); }catch(e){ /* best effort */ }
+        APP.applyUiUpdate();
+      });
+      document.getElementById('uiPatchLaterBtn').addEventListener('click', ()=> bar.remove());
+    }
+    if(APP.onUiStatus){
+      APP.onUiStatus((s)=>{
+        if(s.state === 'ready') showUiPatchBanner(s.version);
+        if(s.state === 'needs-app-update') showToast(`画面の更新 ${s.version} には、アプリ本体の更新(${s.minAppVersion} 以上)が必要です。更新の準備ができ次第、お知らせします`);
+      });
+    }
+
+    // When the window is closing, save whatever is on screen first.
+    APP.onFlushRequest(async ()=>{
+      try{ await autosaveNow(); }catch(e){ /* nothing more we can do */ }
+      APP.flushDone();
+    });
+
+    // Data folder buttons
+    document.getElementById('openDataDirBtn').addEventListener('click', ()=> APP.openDataDir());
+    document.getElementById('startOpenDirBtn').addEventListener('click', ()=> APP.openDataDir());
+    document.getElementById('openBackupsBtn').addEventListener('click', ()=>{
+      if(!currentProject){
+        saveStatus.textContent = '先にプロジェクトを開いてください';
+        saveStatus.style.color = '#c07a3e';
+        return;
+      }
+      APP.openBackups(currentProject.id);
+    });
+    async function changeDataDir(){
+      try{ await autosaveNow(); }catch(e){ /* saved into the old folder first */ }
+      const dir = await APP.chooseDataDir();
+      if(!dir) return;
+      currentProject = null;
+      currentSheetId = null;
+      refreshDataDirLabels(dir);
+      await showStartScreen();
+      showToast('保存フォルダを変更しました(以前のフォルダのファイルは移動されません)');
+    }
+    document.getElementById('startChooseDirBtn').addEventListener('click', changeDataDir);
+  }
+
+  loadData().then(()=>{
+    initColResize();
+    // Tell the app this screen started properly (a patched screen is trusted only after this).
+    if(APP && APP.uiReady) APP.uiReady();
+  });
+})();
+</script>
+
+
+</body>
+</html>
